@@ -1,9 +1,12 @@
-# Turn on auto-merge (squash) for every new PR, so it merges by itself once the
-# required review (and, later, required checks) pass. GitHub has no repo setting
-# that does this by default.
+# Turn on auto-merge (squash) for every PR, so it merges by itself once the
+# required review and required checks (see the main ruleset) pass. GitHub has
+# no repo setting that does this by default.
 #
-# Opt out: add the `no-automerge` label before the PR is ready, or click
-# "Disable auto-merge" on the PR.
+# Also runs on `synchronize`: GitHub sends no pull_request events while a PR has
+# merge conflicts, so a PR opened conflicted only gets auto-merge on its next push.
+#
+# Opt out: add the `no-automerge` label. Clicking "Disable auto-merge" only lasts
+# until the next push, which turns it back on.
 #
 # Token: merges finished by GITHUB_TOKEN do not trigger other workflows, so a
 # `push: main` deploy would not run after an auto-merge. Set the repo secret
@@ -13,14 +16,16 @@ name: auto-merge
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, synchronize]
 
 permissions: {}
 
 jobs:
   enable:
-    # Skip drafts, PRs opted out by label, and fork PRs (their token is read-only).
+    # Skip PRs that already have auto-merge, drafts, PRs opted out by label, and
+    # fork PRs (their token is read-only).
     if: >-
+      github.event.pull_request.auto_merge == null &&
       !github.event.pull_request.draft &&
       !contains(github.event.pull_request.labels.*.name, 'no-automerge') &&
       github.event.pull_request.head.repo.full_name == github.repository
