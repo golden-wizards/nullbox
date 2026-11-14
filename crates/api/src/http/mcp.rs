@@ -19,6 +19,7 @@ use serde_json::{Value, json};
 use uuid::Uuid;
 
 use super::extract::ACTOR_HEADER;
+use crate::audit::{ActorKind, Entry};
 use crate::dto::{CreateTicketRequest, UpdateTicketRequest};
 use crate::{ApiError, AppState};
 
@@ -34,7 +35,7 @@ const INVALID_PARAMS: i64 = -32602;
 
 /// `POST /mcp`
 pub async fn post(State(state): State<AppState>, headers: HeaderMap, body: axum::body::Bytes) -> Response {
-    if let Some(denied) = unauthorized(&state, &headers) {
+    if let Some(denied) = unauthorized(&state, &headers).await {
         return denied;
     }
     let actor = actor_name(&headers);
@@ -64,7 +65,7 @@ pub async fn post(State(state): State<AppState>, headers: HeaderMap, body: axum:
 
 /// `GET`/`DELETE /mcp`: no server-initiated SSE stream and no sessions here.
 pub async fn method_not_allowed(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    if let Some(denied) = unauthorized(&state, &headers) {
+    if let Some(denied) = unauthorized(&state, &headers).await {
         return denied;
     }
     let mut res = StatusCode::METHOD_NOT_ALLOWED.into_response();
@@ -72,8 +73,8 @@ pub async fn method_not_allowed(State(state): State<AppState>, headers: HeaderMa
     res
 }
 
-/// `None` if the bearer token matches `MCP_TOKEN`, else the 401 to send.
-fn unauthorized(state: &AppState, headers: &HeaderMap) -> Option<Response> {
+/// `None` if the bearer token matches `MCP_TOKEN`, else the 401 to send (recorded in the audit log).
+async fn unauthorized(state: &AppState, headers: &HeaderMap) -> Option<Response> {
     let presented = headers
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
@@ -88,6 +89,9 @@ fn unauthorized(state: &AppState, headers: &HeaderMap) -> Option<Response> {
     if ok {
         return None;
     }
+    let reason = if presented.is_some() { "wrong token" } else { "no token" };
+    let entry = Entry::new(ActorKind::Mcp, "auth.refused").denied().with_detail(json!({ "reason": reason }));
+    state.audit.record(entry).await;
     let body = json!({ "code": "unauthorized", "message": "MCP needs Authorization: Bearer <MCP_TOKEN>" });
     let mut res = (StatusCode::UNAUTHORIZED, Json(body)).into_response();
     res.headers_mut().insert(header::WWW_AUTHENTICATE, HeaderValue::from_static("Bearer realm=\"nullbox-mcp\""));
