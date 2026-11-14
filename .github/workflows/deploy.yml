@@ -1,0 +1,197 @@
+# Deploy main to team-06 after CI passes on it (#8).
+#
+# 1. images: build the api and web images (GitHub Actions layer cache) and push them to GHCR,
+#    tagged with the commit SHA and `latest`.
+# 2. deploy: ssh to team-06 as `deploy`, ship compose.yml + Caddyfile, pull the new images,
+#    restart, then smoke-test /api/healthz.
+#
+# The workflow name `deploy` is load-bearing: hot-checks.yml runs after it succeeds.
+#
+# Needs, in the GitHub `production` environment:
+#   - secret DEPLOY_SSH_KEY: the deploy key from the team page (private key, never in git)
+#   - variable DEPLOY_KNOWN_HOSTS (optional): the server's `ssh-keyscan` output. Without it the
+#     host key is fetched with ssh-keyscan at deploy time (trust on first use).
+name: deploy
+
+on:
+  # Safe here: runs only for green push-to-main CI in this repo and builds that commit.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Manual redeploy of the current main.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Deploys never overlap; a queued deploy waits instead of cancelling the running one.
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  HOST: team-06.fasthacks.cloud
+  REMOTE_DIR: /opt/nullbox/deploy
+  # The commit CI just passed on (or the dispatched commit).
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  images:
+    # Only green CI runs from pushes to main in this repo, never PRs from a fork's `main`.
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' ||
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      api: ${{ steps.refs.outputs.api }}
+      web: ${{ steps.refs.outputs.web }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - name: Image names
+        id: refs
+        run: |
+          base="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "api=${base}-api" >> "$GITHUB_OUTPUT"
+          echo "web=${base}-web" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push api
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/api.Dockerfile
+          push: true
+          tags: |
+            ${{ steps.refs.outputs.api }}:${{ env.SHA }}
+            ${{ steps.refs.outputs.api }}:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Build and push web
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/web.Dockerfile
+          push: true
+          tags: |
+            ${{ steps.refs.outputs.web }}:${{ env.SHA }}
+            ${{ steps.refs.outputs.web }}:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://team-06.fasthacks.cloud
+    permissions:
+      contents: read
+      # Lets the server pull from GHCR with this run's short-lived token, even if the packages are private.
+      packages: read
+    env:
+      API_IMAGE: ${{ needs.images.outputs.api }}:${{ github.event.workflow_run.head_sha || github.sha }}
+      WEB_IMAGE: ${{ needs.images.outputs.web }}:${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::DEPLOY_SSH_KEY is not set in the production environment"
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::DEPLOY_KNOWN_HOSTS is not set; trusting the host key from ssh-keyscan"
+            ssh-keyscan -T 15 "$HOST" > ~/.ssh/known_hosts
+          fi
+          cat > ~/.ssh/config <<EOF
+          Host prod
+            HostName $HOST
+            User deploy
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ConnectTimeout 20
+            ServerAliveInterval 15
+          EOF
+
+      - name: Ship compose.yml and Caddyfile
+        run: |
+          scp deploy/compose.yml deploy/Caddyfile prod:/tmp/
+          # REMOTE_DIR expands here on the runner, on purpose.
+          # shellcheck disable=SC2029
+          ssh prod "sudo install -d '$REMOTE_DIR' && sudo mv /tmp/compose.yml /tmp/Caddyfile '$REMOTE_DIR/'"
+
+      - name: Pull images and restart
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The token goes over stdin, never on a command line. It expires when this job ends.
+          # shellcheck disable=SC2029
+          printf '%s\n' "$GHCR_TOKEN" | ssh prod "sudo docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
+          # Image refs go into the compose .env so a manual `docker compose up -d` keeps this release.
+          # They expand here on the runner, on purpose.
+          # shellcheck disable=SC2029
+          ssh prod "sudo env API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' REMOTE_DIR='$REMOTE_DIR' bash -s" <<'EOF'
+          set -euo pipefail
+          cd "$REMOTE_DIR"
+          { grep -vE '^NULLBOX_(API|WEB)_IMAGE=' .env 2>/dev/null || true
+            echo "NULLBOX_API_IMAGE=$API_IMAGE"
+            echo "NULLBOX_WEB_IMAGE=$WEB_IMAGE"; } > .env.new
+          mv .env.new .env
+          status=0
+          docker compose pull api web || status=$?
+          docker logout ghcr.io >/dev/null || true
+          [ "$status" -eq 0 ]
+          docker compose up -d --no-build --remove-orphans
+          docker image prune -f >/dev/null
+          docker compose ps
+          EOF
+
+      - name: Smoke test /api/healthz
+        run: |
+          url="https://$HOST/api/healthz"
+          for i in $(seq 1 20); do
+            if body=$(curl -fsS --max-time 10 "$url") && jq -e '.status == "ok"' <<<"$body" >/dev/null; then
+              echo "healthz ok after $i attempt(s): $body"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::$url did not answer {\"status\":\"ok\"} within 2 minutes"
+          exit 1
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_deploy
