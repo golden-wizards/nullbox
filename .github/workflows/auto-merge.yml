@@ -1,0 +1,36 @@
+# Turn on auto-merge (squash) for every new PR, so it merges by itself once the
+# required review (and, later, required checks) pass. GitHub has no repo setting
+# that does this by default.
+#
+# Opt out: add the `no-automerge` label before the PR is ready, or click
+# "Disable auto-merge" on the PR.
+#
+# Token: merges finished by GITHUB_TOKEN do not trigger other workflows, so a
+# `push: main` deploy would not run after an auto-merge. Set the repo secret
+# AUTOMERGE_TOKEN (fine-grained PAT or GitHub App token with contents +
+# pull-requests write on this repo) to avoid that. Without it, GITHUB_TOKEN is used.
+name: auto-merge
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions: {}
+
+jobs:
+  enable:
+    # Skip drafts, PRs opted out by label, and fork PRs (their token is read-only).
+    if: >-
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'no-automerge') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
