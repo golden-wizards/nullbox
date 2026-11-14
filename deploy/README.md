@@ -10,11 +10,13 @@ Production runs on `team-06` (`ssh team-06`) from `/opt/nullbox/deploy` (`compos
   fallback) and proxies `/api/*` to `api:3000`. `/inbox*` is members-only: Caddy asks `/api/auth/gate`
   (`forward_auth`) and sends visitors without a session to `/login`. Only this container publishes ports (80/443).
 
-Automatic deploy: `.github/workflows/deploy.yml` runs after CI passes on `main`. It pushes
-`ghcr.io/golden-wizards/nullbox-{api,web}:<sha>` to GHCR, ships `compose.yml` and `Caddyfile`, writes the image
-refs into `/opt/nullbox/deploy/.env`, restarts, and fails unless `/api/healthz` answers `{"status":"ok"}`. It needs
-the `DEPLOY_SSH_KEY` secret (and optionally a `DEPLOY_KNOWN_HOSTS` variable) in the GitHub `production` environment.
-Redeploy by hand with Actions → deploy → Run workflow.
+Automatic deploy: `.github/workflows/deploy.yml` runs on every push to `main`. CI runs in parallel with building
+and pushing `ghcr.io/golden-wizards/nullbox-{api,web}:<sha>` to GHCR. Once both pass it ships `compose.yml` and
+`Caddyfile`, writes the image refs into `/opt/nullbox/deploy/.env`, restarts, and fails unless `/api/healthz`
+answers `{"status":"ok"}`. The Dockerfiles are layered for the GitHub Actions cache: a web-only commit reuses the
+whole api build, and a Rust change recompiles only the workspace crates (dependencies come from a cargo-chef layer).
+It needs the `DEPLOY_SSH_KEY` secret (and optionally a `DEPLOY_KNOWN_HOSTS` variable) in the GitHub `production`
+environment. Redeploy by hand with Actions → deploy → Run workflow.
 
 Manual deploy (fallback): build the images where there's CPU, ship them, restart. A manual deploy must clear the
 image refs from `.env`, or compose keeps running the last automatic release.
