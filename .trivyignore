@@ -1,0 +1,11 @@
+# Accepted Trivy findings. Keep each entry justified.
+
+# DS-0002 (no USER): the web image is stock Caddy, which binds 80/443 and
+# manages its own certificate storage as root. Only this container is published.
+DS-0002
+AVD-DS-0002
+
+# DS-0026 (no HEALTHCHECK): liveness is checked from outside through
+# /api/healthz by the deploy smoke test, not by the Docker daemon.
+DS-0026
+AVD-DS-0026
