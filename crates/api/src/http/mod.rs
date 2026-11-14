@@ -3,6 +3,7 @@
 mod admin;
 mod customer;
 pub mod extract;
+mod mcp;
 pub mod observability;
 pub mod payments;
 mod utility;
@@ -39,7 +40,12 @@ pub fn router(state: AppState) -> Router {
 
     let config = state.config.clone();
     middleware(
-        Router::new().nest("/api", api).route("/metrics", get(observability::metrics)).fallback(utility::not_found),
+        Router::new()
+            .nest("/api", api)
+            .route("/metrics", get(observability::metrics))
+            // MCP server for AI agents (bearer `MCP_TOKEN`), see `mcp.rs`
+            .route("/mcp", post(mcp::post).get(mcp::method_not_allowed).delete(mcp::method_not_allowed))
+            .fallback(utility::not_found),
         &config,
     )
     .with_state(state)

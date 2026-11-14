@@ -9,6 +9,11 @@
 		reverse_proxy api:3000
 	}
 
+	# MCP server for AI agents (Authorization: Bearer $MCP_TOKEN)
+	handle /mcp {
+		reverse_proxy api:3000
+	}
+
 	handle {
 		root * /srv
 		try_files {path} /index.html

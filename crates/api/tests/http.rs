@@ -17,6 +17,7 @@ async fn app() -> Router {
         cors_allowed_origins: vec!["http://localhost:5173".into()],
         public_web_url: "http://localhost:5173".into(),
         admin_token: "test-admin-token".into(),
+        mcp_token: Some("test-mcp-token".into()),
     };
     http::router(AppState::new(pool, config))
 }
@@ -155,4 +156,85 @@ async fn admin_export_needs_the_admin_token() {
     let (status, tickets) = send(&app, "GET", "/api/admin/export", &admin, None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(tickets[0]["customer_email"], "a@example.com");
+}
+
+const MCP_AUTH: (&str, &str) = ("authorization", "Bearer test-mcp-token");
+
+async fn rpc(app: &Router, method: &str, params: Value) -> Value {
+    let (status, res) = send(
+        app,
+        "POST",
+        "/mcp",
+        &[MCP_AUTH],
+        Some(json!({ "jsonrpc": "2.0", "id": 7, "method": method, "params": params })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{res}");
+    assert_eq!(res["id"], 7);
+    res
+}
+
+#[tokio::test]
+async fn mcp_needs_the_bearer_token() {
+    let app = app().await;
+    let ping = json!({ "jsonrpc": "2.0", "id": 1, "method": "ping" });
+    let (status, _) = send(&app, "POST", "/mcp", &[], Some(ping.clone())).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _) = send(&app, "POST", "/mcp", &[("authorization", "Bearer nope")], Some(ping.clone())).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, res) = send(&app, "POST", "/mcp", &[MCP_AUTH], Some(ping)).await;
+    assert_eq!((status, &res["result"]), (StatusCode::OK, &json!({})));
+}
+
+#[tokio::test]
+async fn mcp_agent_works_a_ticket() {
+    let app = app().await;
+
+    let init = rpc(&app, "initialize", json!({ "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": { "name": "test", "version": "0" } })).await;
+    assert_eq!(init["result"]["protocolVersion"], "2025-06-18");
+    assert!(init["result"]["capabilities"]["tools"].is_object());
+    let (status, _) = send(
+        &app,
+        "POST",
+        "/mcp",
+        &[MCP_AUTH],
+        Some(json!({ "jsonrpc": "2.0", "method": "notifications/initialized" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+
+    let list = rpc(&app, "tools/list", json!({})).await;
+    let names: Vec<&str> =
+        list["result"]["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap()).collect();
+    for tool in ["list_tickets", "get_ticket", "reply_to_ticket", "update_ticket", "resolve_ticket"] {
+        assert!(names.contains(&tool), "{tool} missing");
+    }
+
+    let (status, _) = send(
+        &app,
+        "POST",
+        "/api/tickets",
+        &[],
+        Some(json!({ "subject": "VPN down", "body": "Help", "severity": "p2" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let call = |name: &str, arguments: Value| json!({ "name": name, "arguments": arguments });
+    let listed = rpc(&app, "tools/call", call("list_tickets", json!({}))).await;
+    assert_eq!(listed["result"]["isError"], false);
+    assert_eq!(listed["result"]["structuredContent"]["tickets"][0]["subject"], "VPN down");
+
+    let replied = rpc(&app, "tools/call", call("reply_to_ticket", json!({ "id": 1, "body": "Restarted it." }))).await;
+    assert_eq!(replied["result"]["structuredContent"]["author_name"], "MCP agent");
+    let resolved = rpc(&app, "tools/call", call("resolve_ticket", json!({ "id": "#1" }))).await;
+    assert_eq!(resolved["result"]["structuredContent"]["status"], "resolved");
+
+    let thread = rpc(&app, "tools/call", call("get_ticket", json!({ "id": 1 }))).await;
+    assert_eq!(thread["result"]["structuredContent"]["ticket"]["status"], "resolved");
+
+    let missing = rpc(&app, "tools/call", call("get_ticket", json!({ "id": 99 }))).await;
+    assert_eq!(missing["result"]["isError"], true);
+    let unknown = rpc(&app, "nope/nope", json!({})).await;
+    assert_eq!(unknown["error"]["code"], -32601);
 }
