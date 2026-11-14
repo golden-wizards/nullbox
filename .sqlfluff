@@ -1,0 +1,10 @@
+# SQLFluff config for Super Linter and local runs (sqlfluff lint migrations/).
+[sqlfluff]
+dialect = sqlite
+max_line_length = 120
+
+# migrations/ aligns column types in CREATE TABLE.
+# Applied migrations can't be edited (sqlx checksums them), so allow alignment.
+[sqlfluff:layout:type:data_type]
+spacing_before = align
+align_within = bracketed
