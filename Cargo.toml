@@ -29,10 +29,10 @@ thiserror = "2.0.21"
 tokio = { version = "1.53.2", features = ["macros", "rt-multi-thread", "net", "signal"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = ["cors", "trace"] }
-opentelemetry = { version = "0.33.1", default-features = false, features = ["trace"] }
-opentelemetry-otlp = { version = "0.33.1", default-features = false, features = ["trace", "http-proto"] }
+opentelemetry = { version = "0.33.1", default-features = false, features = ["trace", "logs"] }
+opentelemetry-otlp = { version = "0.33.1", default-features = false, features = ["trace", "logs", "http-proto"] }
 opentelemetry-http = { version = "0.33.1", default-features = false }
-opentelemetry_sdk = { version = "0.33.1", default-features = false, features = ["trace"] }
+opentelemetry_sdk = { version = "0.33.1", default-features = false, features = ["trace", "logs"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 ts-rs = { version = "12.0.1", features = ["uuid-impl", "chrono-impl"] }

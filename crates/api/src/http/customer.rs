@@ -1,21 +1,29 @@
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::{Extension, Json};
 use nullbox_domain::Message;
 use uuid::Uuid;
 
 use super::extract::{ApiJson, ApiPath, TicketToken};
 use crate::dto::{CreateTicketRequest, CreateTicketResponse, CustomerReplyRequest, TicketThread};
+use crate::otlp::SpanAttributes;
 use crate::{ApiError, AppState};
 
 pub async fn create_ticket(
     State(state): State<AppState>,
     ApiJson(req): ApiJson<CreateTicketRequest>,
-) -> Result<(StatusCode, Json<CreateTicketResponse>), ApiError> {
+) -> Result<(StatusCode, Extension<SpanAttributes>, Json<CreateTicketResponse>), ApiError> {
     let created = state.tickets.create(req).await?;
     let access_link = format!("{}/t/{}#{}", state.config.public_web_url, created.ticket.id, created.access_token);
+    // Exported on this request's OTLP span, so a ticket can be found by its subject.
+    let span_attributes = SpanAttributes(vec![
+        ("ticket.id", created.ticket.id.to_string()),
+        ("ticket.number", created.ticket.number.to_string()),
+        ("ticket.subject", created.ticket.subject.clone()),
+    ]);
     Ok((
         StatusCode::CREATED,
+        Extension(span_attributes),
         Json(CreateTicketResponse { ticket: created.ticket, access_token: created.access_token, access_link }),
     ))
 }
