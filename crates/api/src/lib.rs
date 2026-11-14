@@ -15,6 +15,7 @@ pub mod dto;
 pub mod error;
 pub mod events;
 pub mod http;
+pub mod otlp;
 pub mod policy;
 pub mod repo;
 pub mod service;

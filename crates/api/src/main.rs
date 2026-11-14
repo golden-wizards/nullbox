@@ -19,6 +19,7 @@ async fn main() -> anyhow::Result<()> {
         tracing_subscriber::fmt().with_env_filter(filter).init();
     }
     http::observability::init();
+    nullbox_api::otlp::init();
     std::panic::set_hook(Box::new(|info| {
         tracing::error!(target: "EXISTENTIAL", %info, "the server has stared into the void, and the void panicked back");
     }));
@@ -36,5 +37,6 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!("shutting down, tickets will have to wait");
         })
         .await?;
+    nullbox_api::otlp::shutdown();
     Ok(())
 }

@@ -194,6 +194,7 @@ pub async fn observe(req: Request, next: Next) -> Response {
     let elapsed = started.elapsed();
     let status = response.status().as_u16();
     record(&method, &route, status, elapsed.as_secs_f64());
+    crate::otlp::record_request(&trace_id, &span_id, &method, &route, status, elapsed);
     span.in_scope(|| {
         tracing::info!(
             target: "nullbox::access",
