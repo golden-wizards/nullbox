@@ -146,6 +146,8 @@ async fn customer_and_worker_round_trip() {
 #[tokio::test]
 async fn a_ticket_token_only_opens_its_own_ticket() {
     let app = app().await;
+    let cookie = sign_up(&app, "山田").await;
+    let worker = ("cookie", cookie.as_str());
     let mut tickets = Vec::new();
     for subject in ["Ticket A", "Ticket B"] {
         let (status, created) =
@@ -174,7 +176,7 @@ async fn a_ticket_token_only_opens_its_own_ticket() {
     assert_eq!((status, &error["code"]), (StatusCode::NOT_FOUND, &json!("not_found")));
 
     // Nothing was written to B.
-    let (_, thread) = send(&app, "GET", &format!("/api/tickets/{b_id}"), &[WORKER], None).await;
+    let (_, thread) = send(&app, "GET", &format!("/api/tickets/{b_id}"), &[worker], None).await;
     assert!(thread["messages"].as_array().unwrap().iter().all(|m| m["body"] != "not my ticket"));
 }
 
