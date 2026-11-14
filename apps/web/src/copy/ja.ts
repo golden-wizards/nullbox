@@ -132,6 +132,9 @@ const ja = {
     toSignUp: "アカウントがない場合は作成",
     toSignIn: "アカウントをお持ちの場合はサインイン",
     signOut: "サインアウト",
+    or: "または",
+    github: "GitHubでサインイン",
+    ssoFailed: "GitHubでのサインインに失敗しました。もう一度試すか、パスワードを使ってください。",
   },
 
   beast: {

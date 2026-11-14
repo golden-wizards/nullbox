@@ -5,6 +5,7 @@
  *   origin (Tauri, a CDN, a different domain). No cookies, no same-origin assumptions.
  * - Worker auth is the HttpOnly session cookie (#14), sent with `credentials: "include"`.
  */
+import type { AuthProviders } from "./generated/AuthProviders";
 import type { AuthRequest } from "./generated/AuthRequest";
 import type { BacklogStats } from "./generated/BacklogStats";
 import type { CreateTicketRequest } from "./generated/CreateTicketRequest";
@@ -79,6 +80,9 @@ export const api = {
   logIn: (body: AuthRequest) => request<Me>("POST", "/auth/login", { body }),
   signUp: (body: AuthRequest) => request<Me>("POST", "/auth/signup", { body }),
   logOut: () => request<void>("POST", "/auth/logout"),
+  authProviders: () => request<AuthProviders>("GET", "/auth/providers"),
+  /** Full-page navigation target for GitHub SSO (not a fetch). */
+  githubStartUrl: `${API_BASE_URL}/api/auth/github/start`,
 
   // customers
   createTicket: (body: CreateTicketRequest) =>
