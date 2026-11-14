@@ -3,7 +3,7 @@
 Shared situation report for the team. Update it as you learn things; keep it **secret-free**
 (this repo is public — HOT can only see public repos).
 
-_Last updated: 2026-11-14_
+Last updated: 2026-11-14
 
 ## TL;DR
 
@@ -14,12 +14,12 @@ _Last updated: 2026-11-14_
 ## Where things are
 
 | What | Value |
-|---|---|
-| Team page / scoreboard (HOT) | https://orga.fasthacks.cloud/team |
-| Live URL (what HOT checks) | https://team-06.fasthacks.cloud |
+| --- | --- |
+| Team page / scoreboard (HOT) | <https://orga.fasthacks.cloud/team> |
+| Live URL (what HOT checks) | <https://team-06.fasthacks.cloud> |
 | Server | `team-06.fasthacks.cloud` → `52.195.229.31`, user `deploy` (passwordless sudo) |
 | Server spec | 2 vCPU, 2 GB RAM, 58 GB disk, Ubuntu 24.04, Docker + Compose v5, Tokyo (AWS Lightsail) |
-| Repo | https://github.com/golden-wizards/nullbox (fork of `tweidinger/nullbox`) |
+| Repo | <https://github.com/golden-wizards/nullbox> (fork of `tweidinger/nullbox`) |
 | HOT's GitHub bot | `fasthacks-bot` — already has push access |
 | DNS | deSEC, zone `team-06.fasthacks.cloud`, DNSSEC on. Token is on the team page (Server & domain → Advanced) |
 
@@ -37,7 +37,7 @@ repository **secret**, never in a file.
 Checked by HOT (automatic), a judge, or both. Deploy must pass before the rest unlock.
 
 | Upgrade | Pts | Checked by | Owner | Status |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **Deploy** | 1 | HOT | | not started |
 | CI/CD: automatic deployments | 2 | HOT | | locked |
 | CI/CD: fast builds with a cache | 1 | HOT | | locked |
@@ -45,7 +45,7 @@ Checked by HOT (automatic), a judge, or both. Deploy must pass before the rest u
 | Login: members-only page stays closed | 1 | HOT | | locked |
 | Login: username and password | 2 | judge | | locked |
 | Login: single sign-on (SSO) | 2 | judge | | locked |
-| Security: rotate the leaked secret | 1 | HOT | | locked |
+| Security: rotate the leaked secret | 1 | HOT | t-okamoto1122 (#9) | code fix in PR #45; server rotation waits on Deploy |
 | Security: the secret out of git | 1 | HOT | | locked |
 | Security: customer links | 1 | judge | | locked |
 | Security: firewall | 1 | HOT | | locked |
@@ -108,3 +108,5 @@ See `README.md` → "Extension seams" for where each upgrade plugs in. Short ver
 ## Log
 
 - 2026-11-14 — SSH access set up and verified on HOT; repo cloned; this SITREP written.
+- 2026-11-14 — `main` ruleset applied (#5): PRs only, required checks `secret-scan`/`rust`/`web`, admins bypass; classic protection removed; merge commits disabled.
+- 2026-11-14 — #9: hardcoded leaked `ADMIN_TOKEN` default removed (PR #45). The token on the server still has to be rotated after Deploy.
