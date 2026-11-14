@@ -1,6 +1,19 @@
 {$SITE_ADDRESS:team-06.fasthacks.cloud} {
 	encode zstd gzip
 
+	# Security headers (#46). The SPA only loads its own bundle and calls /api on the same
+	# origin; Stripe Checkout is a top-level redirect, so CSP doesn't need to allow it.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+
 	handle /metrics {
 		reverse_proxy api:3000
 	}
