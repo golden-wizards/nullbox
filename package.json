@@ -1,6 +1,14 @@
 {
   "name": "nullbox",
   "private": true,
+  "homepage": "https://github.com/golden-wizards/nullbox",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/golden-wizards/nullbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/golden-wizards/nullbox/issues"
+  },
   "license": "Unlicense",
   "packageManager": "pnpm@12.14.0",
   "scripts": {
@@ -12,5 +20,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
