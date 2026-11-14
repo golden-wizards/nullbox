@@ -252,3 +252,12 @@
   background: var(--color-accent);
   color: #fff;
 }
+
+.ssoButton {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid currentcolor;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+}

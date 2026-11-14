@@ -135,6 +135,9 @@ const en = {
     toSignUp: "No account yet? Create one",
     toSignIn: "Already have an account? Sign in",
     signOut: "Sign out",
+    or: "or",
+    github: "Sign in with GitHub",
+    ssoFailed: "GitHub sign-in didn't work. Try again, or use a password.",
   },
 
   beast: {

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { api } from "../api/client";
@@ -14,6 +14,7 @@ export function LoginPage() {
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
+  const providers = useQuery({ queryKey: ["auth", "providers"], queryFn: api.authProviders });
 
   const submit = useMutation({
     mutationFn: (form: { username: string; password: string; invite_code?: string }) =>
@@ -40,6 +41,15 @@ export function LoginPage() {
     <section className={styles.page}>
       <h1>{signUp ? copy.login.signUpTitle : copy.login.title}</h1>
       <p className={styles.intro}>{copy.login.intro}</p>
+      {params.get("sso") === "failed" && <p className={styles.warning}>{copy.login.ssoFailed}</p>}
+      {providers.data?.github && (
+        <p>
+          <a className={styles.ssoButton} href={api.githubStartUrl}>
+            {copy.login.github}
+          </a>{" "}
+          <span className={styles.muted}>{copy.login.or}</span>
+        </p>
+      )}
       <form className={`${styles.card} ${styles.form}`} onSubmit={onSubmit}>
         <label className={styles.field}>
           {copy.login.username}

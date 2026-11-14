@@ -5,7 +5,7 @@ Production runs on `team-06` (`ssh team-06`) from `/opt/nullbox/deploy` (`compos
 - `api`: Rust API. SQLite lives on the `data` volume. Config and secrets come from `/etc/nullbox/nullbox.env`
   on the server (root, 0600, **never in git**: `CORS_ALLOWED_ORIGINS`, `PUBLIC_WEB_URL`, `ADMIN_TOKEN`, `RUST_LOG`,
   and for payments `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, optional `STRIPE_PUBLISHABLE_KEY`; see `.env.example`).
-  Login: optional `SIGNUP_INVITE_CODE`.
+  Login: optional `SIGNUP_INVITE_CODE`; GitHub SSO: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` (both unset = off), optional `GITHUB_ALLOWED_USERS`.
 - `web`: Caddy with the built web app. It handles TLS for team-06.fasthacks.cloud, serves `/` (SPA
   fallback) and proxies `/api/*` to `api:3000`. `/inbox*` is members-only: Caddy asks `/api/auth/gate`
   (`forward_auth`) and sends visitors without a session to `/login`. Only this container publishes ports (80/443).

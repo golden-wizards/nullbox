@@ -173,3 +173,48 @@ async fn customer_links_still_work_without_login() {
     .await;
     assert_eq!(res.status, StatusCode::CREATED);
 }
+
+#[tokio::test]
+async fn sso_is_off_without_github_credentials() {
+    // CI and local runs have no GITHUB_CLIENT_ID/SECRET: SSO stays off, the app still works.
+    if std::env::var("GITHUB_CLIENT_ID").is_ok() {
+        return;
+    }
+    let app = app().await;
+    let res = send(&app, "GET", "/api/auth/providers", &[], None).await;
+    assert_eq!(res.body, json!({ "password": true, "github": false }));
+    assert_eq!(send(&app, "GET", "/api/auth/github/start", &[], None).await.status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        send(&app, "GET", "/api/auth/github/callback?code=x&state=y", &[], None).await.status,
+        StatusCode::NOT_FOUND
+    );
+}
+
+#[tokio::test]
+async fn sso_accounts_are_linked_by_provider_id() {
+    let pool = db::connect_in_memory().await.expect("in-memory db");
+    let auth = nullbox_api::auth::AuthService::new(pool, None);
+    let (first, session) = auth.sso_sign_in("github", "42", "octocat@github").await.unwrap();
+    assert_eq!(first.username, "octocat@github");
+    assert_eq!(auth.session_user(&session).await.unwrap(), Some(first.clone()));
+    // Same GitHub id again (even after a rename): same account.
+    let (again, _) = auth.sso_sign_in("github", "42", "renamed@github").await.unwrap();
+    assert_eq!(again, first);
+    // A different GitHub id that reuses the old login gets its own, unique name.
+    let (other, _) = auth.sso_sign_in("github", "7", "octocat@github").await.unwrap();
+    assert_ne!(other.id, first.id);
+    assert_eq!(other.username, "octocat@github-7");
+    // SSO accounts have no password, so password login can't reach them.
+    assert!(auth.log_in("octocat@github", "").await.is_err());
+}
+
+#[test]
+fn github_authorize_url_is_encoded() {
+    let url = nullbox_api::http::sso::authorize_url("abc", "https://x.example/api/auth/github/callback", "s t");
+    assert!(
+        url.starts_with(
+            "https://github.com/login/oauth/authorize?client_id=abc&redirect_uri=https%3A%2F%2Fx%2Eexample"
+        )
+    );
+    assert!(url.contains("&state=s%20t"));
+}
