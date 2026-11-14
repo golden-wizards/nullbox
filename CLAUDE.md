@@ -148,6 +148,26 @@ holder in chat. Take it over only after they agree (or the team does), and say s
 - `ssh team-06` (user `deploy`, passwordless sudo). Setup: team page → Server & domain.
 - Server changes must be reproducible from the repo (compose files, config templates). If you
   change something by hand, add a line to the SITREP log.
-- Don't press **Check** on HOT until you've verified the result from outside the server. After 3
-  failures, use **Ask a judge**. Pressing Check is the only write to HOT that counts against us.
-- `/sitrep` pulls the scoreboard and syncs `docs/SITREP.md` and the issues.
+- **Points only count once HOT has run the check.** Merging and deploying isn't enough: the
+  leaderboard updates only after someone presses **Check** on the team page and it passes.
+- Don't press Check until you've verified the result from outside the server. After 3 failures,
+  use **Ask a judge**. Pressing Check is the only write to HOT that counts against us.
+- `/sitrep` pulls our checks and the public leaderboard and syncs `docs/SITREP.md` and the issues.
+
+## Regular checks (everyone, all day)
+
+The event has a hard end (`ends_at` on the leaderboard). Run this loop **at the start of every
+work session, after every merge to `main`, and at least every ~30 minutes:**
+
+1. **Pull `main`.** In the main clone: `git switch main && git pull --ff-only`. In each of your
+   worktrees: `git fetch origin && git rebase origin/main` (push with `--force-with-lease`
+   afterwards if the branch was already pushed). Small, frequently rebased branches merge cleanly,
+   and stale ones cause the conflicts.
+2. **Check the leaderboard** at https://orga.fasthacks.cloud/ (public JSON:
+   `curl -fsS https://orga.fasthacks.cloud/api/scoreboard`). Look at our rank and points, the time
+   left, and what the leading teams have passed (if they did it, it's doable).
+3. **Press Check for anything that's live but not yet scored.** When a PR for a scored issue is
+   merged and deployed, the PR author verifies it from outside and then presses Check for its key
+   (team page, or `/sitrep`). Note the result on the issue. Don't leave points sitting un-checked.
+4. **Run `/sitrep`** (or at least look at the team page) and fix anything stale: claims with no
+   activity, failed checks, newly unlocked upgrades nobody owns.
