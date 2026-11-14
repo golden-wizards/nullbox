@@ -57,7 +57,7 @@ function clock(m: number) {
 
 <template>
   <svg :viewBox="`0 0 ${W} 372`" role="img" aria-label="Merged pull requests per ten minutes and HOT points over the event" class="timeline">
-    <rect x="0" y="0" :width="W" height="372" rx="8" fill="#fcfcfb" />
+    <rect x="0" y="0" :width="W" height="372" rx="8" fill="#fafafa" />
 
     <text :x="L" y="18" class="title">Pull requests merged per 10 minutes (40 in total)</text>
     <line :x1="L" :x2="W - R" :y1="barTop + barH" :y2="barTop + barH" class="axis" />
@@ -65,7 +65,7 @@ function clock(m: number) {
     <text :x="L - 6" :y="barTop + 4" class="tick end">10</text>
     <text :x="L - 6" :y="barTop + barH + 4" class="tick end">0</text>
     <g v-for="b in bars" :key="b.x">
-      <rect v-if="b.n" :x="b.x" :y="barTop + barH - b.h" :width="b.w" :height="b.h" rx="3" fill="#2a78d6">
+      <rect v-if="b.n" :x="b.x" :y="barTop + barH - b.h" :width="b.w" :height="b.h" rx="3" fill="#2f7fad">
         <title>{{ b.label }}</title>
       </rect>
     </g>
@@ -78,9 +78,9 @@ function clock(m: number) {
     <text :x="L - 6" :y="y(16) + 4" class="tick end">16</text>
     <text :x="L - 6" :y="y(8) + 4" class="tick end">8</text>
     <text :x="L - 6" :y="y(0) + 4" class="tick end">0</text>
-    <path :d="path" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round" />
+    <path :d="path" fill="none" stroke="#e0304f" stroke-width="2" stroke-linejoin="round" />
     <g v-for="[m, p, name] in steps" :key="name">
-      <circle :cx="x(m)" :cy="y(p)" r="4" fill="#eb6834" stroke="#fcfcfb" stroke-width="2" />
+      <circle :cx="x(m)" :cy="y(p)" r="4" fill="#e0304f" stroke="#fafafa" stroke-width="2" />
       <circle :cx="x(m)" :cy="y(p)" r="10" fill="transparent">
         <title>{{ clock(m) }}Z: {{ name }}, {{ p }} points</title>
       </circle>
@@ -105,7 +105,7 @@ function clock(m: number) {
 .title {
   font-size: 13px;
   font-weight: 600;
-  fill: #0b0b0b;
+  fill: #291334;
 }
 .tick,
 .note {
@@ -113,7 +113,7 @@ function clock(m: number) {
   fill: #52514e;
 }
 .note {
-  fill: #0b0b0b;
+  fill: #291334;
 }
 .mid {
   text-anchor: middle;

@@ -1,0 +1,148 @@
+/* OKTECH brand: Lexend, the plum logo base, and the three logo colours (https://oktech.jp). */
+:root {
+  --oktech-base: #291334;
+  --oktech-red: #fd4d69;
+  --oktech-green: #49d773;
+  --oktech-blue: #459bc9;
+  --oktech-surface: #fafafa;
+  --slidev-theme-primary: #459bc9;
+}
+
+.slidev-layout {
+  background: var(--oktech-surface);
+  color: #111;
+  font-family: 'Lexend', ui-sans-serif, system-ui, sans-serif;
+}
+
+.slidev-layout h1 {
+  color: var(--oktech-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.slidev-layout strong {
+  color: var(--oktech-base);
+  font-weight: 600;
+}
+
+.slidev-layout li::marker {
+  color: var(--oktech-blue);
+}
+
+.slidev-layout th {
+  color: var(--oktech-base);
+  font-weight: 600;
+}
+
+.slidev-layout code {
+  color: var(--oktech-base);
+}
+
+.oktech-stripe {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  height: 6px;
+}
+
+.oktech-stripe i {
+  flex: 1;
+}
+
+.oktech-stripe i:nth-child(1) {
+  background: var(--oktech-red);
+}
+
+.oktech-stripe i:nth-child(2) {
+  background: var(--oktech-green);
+}
+
+.oktech-stripe i:nth-child(3) {
+  background: var(--oktech-blue);
+}
+
+.oktech-footer {
+  position: absolute;
+  right: 28px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--oktech-base);
+  font-family: 'Lexend', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.oktech-footer svg {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  transform: rotate(7deg);
+}
+
+.oktech-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  color: var(--oktech-base);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.oktech-hero svg {
+  width: 72px;
+  height: 72px;
+  transform: rotate(7deg);
+}
+
+.big {
+  color: var(--oktech-base);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.steps {
+  display: grid;
+  gap: 18px;
+  padding-top: 20px;
+  font-size: 26px;
+}
+
+.steps > div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.steps b {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 600;
+}
+
+.steps > div:nth-child(1) b {
+  background: #e0304f;
+}
+
+.steps > div:nth-child(2) b {
+  background: #1f8f47;
+}
+
+.steps > div:nth-child(3) b {
+  background: #2f7fad;
+}
+
+.slidev-layout li {
+  font-size: 24px;
+  line-height: 1.9;
+}
