@@ -1,0 +1,14 @@
+# Nullbox
+
+> Nullbox is a small, deliberately silly support ticketing system: customers report problems,
+> support workers answer them, and everyone works toward Inbox Zero while the Backlog Beast watches.
+
+## Pages
+
+- [New ticket](https://team-06.fasthacks.cloud/): customers describe what broke and file a ticket
+- [Worker inbox](https://team-06.fasthacks.cloud/inbox): support workers triage and answer open tickets
+
+## API
+
+- [Health check](https://team-06.fasthacks.cloud/api/healthz): JSON API under `/api`, returns `{"status":"ok"}`
+- [Source code and API docs](https://github.com/golden-wizards/nullbox): Rust/axum API and React web app
