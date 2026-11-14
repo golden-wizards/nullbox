@@ -3,6 +3,7 @@
 mod admin;
 mod customer;
 pub mod extract;
+pub mod observability;
 mod utility;
 mod worker;
 
@@ -30,10 +31,15 @@ pub fn router(state: AppState) -> Router {
         .route("/admin/export", get(admin::export))
         // utility
         .route("/healthz", get(utility::healthz))
-        .route("/teapot", get(utility::teapot));
+        .route("/teapot", get(utility::teapot))
+        .route("/metrics", get(observability::metrics));
 
     let config = state.config.clone();
-    middleware(Router::new().nest("/api", api).fallback(utility::not_found), &config).with_state(state)
+    middleware(
+        Router::new().nest("/api", api).route("/metrics", get(observability::metrics)).fallback(utility::not_found),
+        &config,
+    )
+    .with_state(state)
 }
 
 /// The one place for cross-cutting layers. Tracing exporters, rate limiting,
@@ -42,7 +48,10 @@ pub fn router(state: AppState) -> Router {
 /// Routes outside `/api` (an MCP server at `/mcp`, say) go next to the `nest` in
 /// `router`, so they pass through here too.
 pub fn middleware<S: Clone + Send + Sync + 'static>(router: Router<S>, config: &Config) -> Router<S> {
-    router.layer(cors(config)).layer(TraceLayer::new_for_http())
+    router
+        .layer(cors(config))
+        .layer(TraceLayer::new_for_http())
+        .layer(axum::middleware::from_fn(observability::observe))
 }
 
 /// CORS for the web app on another origin (Vite in dev, Tauri). `Authorization` is
