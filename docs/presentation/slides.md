@@ -3,12 +3,13 @@ theme: default
 title: 'Golden Wizards: Nullbox in 167 minutes'
 info: Retro for the fasthacks hackathon, team-06. Full report in docs/RETRO.md.
 routerMode: hash
-colorSchema: light
+colorSchema: dark
 transition: fade
 mdc: true
 fonts:
-  sans: Lexend
-  weights: '300,400,600'
+  sans: Nunito Sans
+  serif: Cinzel
+  weights: '400,600,700'
 ---
 
 <!-- markdownlint-disable MD025 MD041 -->
@@ -16,16 +17,14 @@ fonts:
 <div class="grid grid-cols-[1fr_300px] gap-10 items-center h-full">
 <div>
 
-<div class="oktech-hero"><OkTechLogo /><span>OKTECH</span></div>
+<div class="gw-eyebrow">✦ Golden Wizards · team-06</div>
 
 # Nullbox in 167 minutes
-
-Golden Wizards, team-06
 
 <div class="big">16 points · 2nd of 8</div>
 
 </div>
-<img src="/golden-wizards.png" alt="Golden Wizards: the team's GitHub organisation image, four wizards in golden robes" class="rounded-xl shadow-lg w-[300px] h-[300px]" />
+<img src="/golden-wizards.png" alt="Golden Wizards: the team's GitHub organisation image, four wizards in golden robes" class="gw-portrait" />
 </div>
 
 ---
@@ -66,4 +65,4 @@ Golden Wizards, team-06
 <div><b>3</b>Merged is not scored until it is live</div>
 </div>
 
-<div class="pt-10 opacity-70">Still with the judges: up to 8 more points.</div>
+<div class="pt-10 muted">Still with the judges: up to 8 more points.</div>

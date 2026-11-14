@@ -1,109 +1,93 @@
-/* OKTECH brand: Lexend, the plum logo base, and the three logo colours (https://oktech.jp). */
+/* Golden Wizards theme: a night sky, parchment text and gold. */
 :root {
-  --oktech-base: #291334;
-  --oktech-red: #fd4d69;
-  --oktech-green: #49d773;
-  --oktech-blue: #459bc9;
-  --oktech-surface: #fafafa;
-  --slidev-theme-primary: #459bc9;
+  --gw-night: #17132e;
+  --gw-night-2: #2a1f55;
+  --gw-gold: #f2c14e;
+  --gw-gold-deep: #c98500;
+  --gw-parchment: #f3ecd8;
+  --gw-muted: #b9b2cf;
+  --slidev-theme-primary: #f2c14e;
 }
 
 .slidev-layout {
-  background: var(--oktech-surface);
-  color: #111;
-  font-family: 'Lexend', ui-sans-serif, system-ui, sans-serif;
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff8 50%, transparent 51%),
+    radial-gradient(1px 1px at 31% 72%, #fff6 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 58% 9%, #fff7 50%, transparent 51%),
+    radial-gradient(1px 1px at 77% 41%, #fff6 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 91% 83%, #fff7 50%, transparent 51%),
+    radial-gradient(1px 1px at 45% 90%, #fff5 50%, transparent 51%),
+    radial-gradient(ellipse at 85% 0%, var(--gw-night-2), transparent 60%),
+    var(--gw-night);
+  color: var(--gw-parchment);
+  font-family: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 .slidev-layout h1 {
-  color: var(--oktech-base);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  color: var(--gw-gold);
+  font-family: 'Cinzel', ui-serif, Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .slidev-layout strong {
-  color: var(--oktech-base);
-  font-weight: 600;
+  color: var(--gw-gold);
+}
+
+.slidev-layout li {
+  font-size: 24px;
+  line-height: 1.9;
 }
 
 .slidev-layout li::marker {
-  color: var(--oktech-blue);
+  color: var(--gw-gold);
+  content: '✦  ';
 }
 
-.slidev-layout th {
-  color: var(--oktech-base);
-  font-weight: 600;
-}
-
-.slidev-layout code {
-  color: var(--oktech-base);
-}
-
-.oktech-stripe {
+.gw-rule {
   position: absolute;
   inset: 0 0 auto 0;
-  display: flex;
-  height: 6px;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, var(--gw-gold-deep) 15%, var(--gw-gold) 50%, var(--gw-gold-deep) 85%, transparent);
 }
 
-.oktech-stripe i {
-  flex: 1;
-}
-
-.oktech-stripe i:nth-child(1) {
-  background: var(--oktech-red);
-}
-
-.oktech-stripe i:nth-child(2) {
-  background: var(--oktech-green);
-}
-
-.oktech-stripe i:nth-child(3) {
-  background: var(--oktech-blue);
-}
-
-.oktech-footer {
+.gw-footer {
   position: absolute;
   right: 28px;
   bottom: 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--oktech-base);
-  font-family: 'Lexend', ui-sans-serif, system-ui, sans-serif;
+  color: var(--gw-gold);
+  font-family: 'Cinzel', ui-serif, Georgia, serif;
   font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
-.oktech-footer svg {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  transform: rotate(7deg);
+.gw-eyebrow {
+  margin-bottom: 20px;
+  color: var(--gw-muted);
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.oktech-hero {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 28px;
-  color: var(--oktech-base);
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.oktech-hero svg {
-  width: 72px;
-  height: 72px;
-  transform: rotate(7deg);
+.gw-portrait {
+  width: 300px;
+  height: 300px;
+  border: 3px solid var(--gw-gold);
+  border-radius: 16px;
+  box-shadow: 0 0 48px #f2c14e55;
 }
 
 .big {
-  color: var(--oktech-base);
+  color: var(--gw-gold);
+  font-family: 'Cinzel', ui-serif, Georgia, serif;
   font-size: 34px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.25;
+}
+
+.muted {
+  color: var(--gw-muted);
 }
 
 .steps {
@@ -126,23 +110,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  color: #fff;
-  font-weight: 600;
-}
-
-.steps > div:nth-child(1) b {
-  background: #e0304f;
-}
-
-.steps > div:nth-child(2) b {
-  background: #1f8f47;
-}
-
-.steps > div:nth-child(3) b {
-  background: #2f7fad;
-}
-
-.slidev-layout li {
-  font-size: 24px;
-  line-height: 1.9;
+  background: var(--gw-gold);
+  color: var(--gw-night);
+  font-family: 'Cinzel', ui-serif, Georgia, serif;
+  font-weight: 700;
 }

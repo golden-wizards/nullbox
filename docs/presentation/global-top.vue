@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { useNav } from '@slidev/client'
-import OkTechLogo from './components/OkTechLogo.vue'
 
 const { currentPage } = useNav()
 </script>
 
 <template>
-  <!-- Brand strip on every slide; the title slide carries the large logo instead. -->
-  <div class="oktech-stripe" aria-hidden="true"><i /><i /><i /></div>
-  <footer v-if="currentPage > 1" class="oktech-footer">
-    <OkTechLogo />
-    <span>OKTECH</span>
-  </footer>
+  <!-- Gold rule on every slide; a small team mark from the second slide on. -->
+  <div class="gw-rule" aria-hidden="true" />
+  <footer v-if="currentPage > 1" class="gw-footer"><span aria-hidden="true">✦</span> Golden Wizards</footer>
 </template>
