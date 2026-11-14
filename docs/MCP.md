@@ -11,7 +11,7 @@ and resolve them like a support worker. Code: `crates/api/src/http/mcp.rs`.
   `401`. Actions are attributed to `X-Actor-Name` (percent-encoded) if sent, else "MCP agent".
 
 | Tool | What it does | Like |
-|---|---|---|
+| --- | --- | --- |
 | `list_tickets` | active tickets, or those with `status` | `GET /api/tickets` |
 | `get_ticket` | ticket + full thread incl. internal notes | `GET /api/tickets/{id}` |
 | `reply_to_ticket` | reply to the customer, or `internal: true` note | `POST /api/tickets/{id}/messages` |
