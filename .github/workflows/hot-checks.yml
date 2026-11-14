@@ -1,0 +1,61 @@
+# Press HOT "Check" after every successful deploy of main, so merged upgrades
+# show up on the leaderboard without anyone having to remember (#58).
+# Guard rails live in scripts/hot-check.sh: only HOT-decided, unlocked, unpassed
+# checks that have never failed are pressed (at most one automated failure each).
+#
+# Needs the repo secret HOT_TOKEN (the team login code from the team page).
+name: hot-checks
+
+on:
+  # Chained to the deploy workflow from #8 (it must be named "deploy").
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      keys:
+        description: "Check keys to press, space-separated (empty = every eligible one)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Only show what would be pressed"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hot-checks
+  cancel-in-progress: false
+
+jobs:
+  press:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Wait for the live site
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS https://team-06.fasthacks.cloud/api/healthz | grep -q '"ok"'; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::live site not healthy, not pressing any checks"
+          exit 1
+      - name: Press eligible checks
+        env:
+          HOT_TOKEN: ${{ secrets.HOT_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          KEYS: ${{ inputs.keys }}
+        run: |
+          if [ -z "$HOT_TOKEN" ]; then
+            echo "::warning::repo secret HOT_TOKEN is not set, skipping"
+            exit 0
+          fi
+          # shellcheck disable=SC2086 # KEYS is a space-separated list on purpose
+          scripts/hot-check.sh $KEYS
