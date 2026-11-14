@@ -1,7 +1,7 @@
 # Nullbox: Golden Wizards (team-06), fasthacks
 
 Hackathon repo. We level up Nullbox (Rust/axum API + React/Vite web) toward production and score
-upgrades on HOT (https://orga.fasthacks.cloud/team). Read first:
+upgrades on HOT (<https://orga.fasthacks.cloud/team>). Read first:
 
 - `docs/BATTLEPLAN.md`: what we're trying to achieve and in what order
 - `docs/SITREP.md`: current state, where things are, known problems
@@ -106,10 +106,12 @@ Then do all the work, and run Claude, from inside that worktree.
    - Web: `pnpm lint`, `pnpm test`, `pnpm build`
    - Always: `/secret-check` on the outgoing commits **and** on the PR body
 3. Push and open the PR:
+
    ```sh
    git push -u origin "$B"   # --force-with-lease if you rebased
    gh api $R/pulls -f title="<what it does>" -f head="$B" -f base=main -F body=@/tmp/pr.md
    ```
+
    Body: summary, how it was tested, and `Closes #N` on its own line (that auto-closes the issue
    on merge). Keep PRs small, since a 30-minute PR beats a 3-hour one at a hackathon.
 4. Comment the PR link on the issue. Leave the `in-progress` label on until the PR is merged.
@@ -130,7 +132,7 @@ Claude sessions: run it as a **background** command (`run_in_background`), so yo
 when it exits. Don't poll it in a foreground loop. Then act on the exit code:
 
 | Exit | Meaning | Do |
-|---|---|---|
+| --- | --- | --- |
 | `0` | all checks passed (or already merged) | Done. Auto-merge handles the rest. Clean up (step 6) after the merge. |
 | `1` | a check failed. Its annotations and error log lines are printed. | Run the fix loop below. |
 | `2` | merge conflict, or PR closed | `git fetch origin && git rebase origin/main`, resolve, `push --force-with-lease`, watch again |
@@ -151,6 +153,7 @@ when it exits. Don't poll it in a foreground loop. Then act on the exit code:
    you tried on the PR and ask a human.
 
 While fixing:
+
 - **Never weaken the checks to get green.** No disabling lint rules, skipping or deleting tests,
   `continue-on-error`, `#[allow]`/`biome-ignore` without a reason, or allowlisting a secret.
   Changing CI config belongs in its own PR, agreed with the team.
@@ -204,7 +207,7 @@ work session, after every merge to `main`, and at least every ~30 minutes:**
    worktrees: `git fetch origin && git rebase origin/main` (push with `--force-with-lease`
    afterwards if the branch was already pushed). Small, frequently rebased branches merge cleanly,
    and stale ones cause the conflicts.
-2. **Check the leaderboard** at https://orga.fasthacks.cloud/ (public JSON:
+2. **Check the leaderboard** at <https://orga.fasthacks.cloud/> (public JSON:
    `curl -fsS https://orga.fasthacks.cloud/api/scoreboard`). Look at our rank and points, the time
    left, and what the leading teams have passed (if they did it, it's doable).
 3. **Press Check for anything that's live but not yet scored.** When a PR for a scored issue is

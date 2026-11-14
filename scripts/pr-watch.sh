@@ -51,8 +51,14 @@ show_failure() { # $1 = check-run JSON
 
 while :; do
   pr=$(gh api "$R/pulls/$PR")
-  if [ "$(jq -r .merged <<<"$pr")" = true ]; then echo "PR #$PR is merged ✅"; exit 0; fi
-  if [ "$(jq -r .state <<<"$pr")" != open ]; then echo "PR #$PR was closed without merging"; exit 2; fi
+  if [ "$(jq -r .merged <<<"$pr")" = true ]; then
+    echo "PR #$PR is merged ✅"
+    exit 0
+  fi
+  if [ "$(jq -r .state <<<"$pr")" != open ]; then
+    echo "PR #$PR was closed without merging"
+    exit 2
+  fi
   sha=$(jq -r .head.sha <<<"$pr")
   ms=$(jq -r .mergeable_state <<<"$pr")
   if [ "$ms" = dirty ]; then
@@ -79,6 +85,9 @@ while :; do
     echo "All $total checks passed on ${sha:0:7} ✅ (auto-merge takes it from here)"
     exit 0
   fi
-  if [ "$(date +%s)" -ge "$deadline" ]; then echo "Timed out with $pending checks still running"; exit 3; fi
+  if [ "$(date +%s)" -ge "$deadline" ]; then
+    echo "Timed out with $pending checks still running"
+    exit 3
+  fi
   sleep "$INTERVAL"
 done
