@@ -1,7 +1,7 @@
 # Nullbox: Golden Wizards (team-06), fasthacks
 
 Hackathon repo. We level up Nullbox (Rust/axum API + React/Vite web) toward production and score
-upgrades on HOT (https://orga.fasthacks.cloud/team). Read first:
+upgrades on HOT (<https://orga.fasthacks.cloud/team>). Read first:
 
 - `docs/BATTLEPLAN.md`: what we're trying to achieve and in what order
 - `docs/SITREP.md`: current state, where things are, known problems
@@ -106,10 +106,12 @@ Then do all the work, and run Claude, from inside that worktree.
    - Web: `pnpm lint`, `pnpm test`, `pnpm build`
    - Always: `/secret-check` on the outgoing commits **and** on the PR body
 3. Push and open the PR:
+
    ```sh
    git push -u origin "$B"   # --force-with-lease if you rebased
    gh api $R/pulls -f title="<what it does>" -f head="$B" -f base=main -F body=@/tmp/pr.md
    ```
+
    Body: summary, how it was tested, and `Closes #N` on its own line (that auto-closes the issue
    on merge). Keep PRs small, since a 30-minute PR beats a 3-hour one at a hackathon.
 4. Comment the PR link on the issue. Leave the `in-progress` label on until the PR is merged.
@@ -163,7 +165,7 @@ work session, after every merge to `main`, and at least every ~30 minutes:**
    worktrees: `git fetch origin && git rebase origin/main` (push with `--force-with-lease`
    afterwards if the branch was already pushed). Small, frequently rebased branches merge cleanly,
    and stale ones cause the conflicts.
-2. **Check the leaderboard** at https://orga.fasthacks.cloud/ (public JSON:
+2. **Check the leaderboard** at <https://orga.fasthacks.cloud/> (public JSON:
    `curl -fsS https://orga.fasthacks.cloud/api/scoreboard`). Look at our rank and points, the time
    left, and what the leading teams have passed (if they did it, it's doable).
 3. **Press Check for anything that's live but not yet scored.** When a PR for a scored issue is
