@@ -8,6 +8,7 @@ use nullbox_domain::{Message, Ticket};
 use uuid::Uuid;
 
 use super::extract::{Actor, ApiJson, ApiPath, ApiQuery};
+use crate::audit::Entry;
 use crate::dto::{BacklogStats, ListTicketsQuery, TicketThread, UpdateTicketRequest, WorkerMessageRequest};
 use crate::policy::{self, Action, Resource};
 use crate::{ApiError, AppState};
@@ -27,7 +28,9 @@ pub async fn get_ticket(
     ApiPath(id): ApiPath<Uuid>,
 ) -> Result<Json<TicketThread>, ApiError> {
     policy::ensure(&actor, Action::ViewTicket, Resource::Ticket(id))?;
-    Ok(Json(state.tickets.worker_thread(id).await?))
+    let thread = state.tickets.worker_thread(id).await?;
+    state.audit.record(Entry::worker(&actor.name, "ticket.viewed").with_ticket(id)).await;
+    Ok(Json(thread))
 }
 
 pub async fn add_message(

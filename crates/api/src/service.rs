@@ -60,11 +60,14 @@ impl TicketService {
             })
             .await?;
 
-        self.events.emit(DomainEvent::TicketCreated {
-            ticket_id: ticket.id,
-            number: ticket.number,
-            severity: ticket.severity,
-        });
+        self.events
+            .emit(DomainEvent::TicketCreated {
+                ticket_id: ticket.id,
+                number: ticket.number,
+                severity: ticket.severity,
+                subject: ticket.subject.clone(),
+            })
+            .await;
         Ok(CreatedTicket { ticket, access_token })
     }
 
@@ -124,6 +127,7 @@ impl TicketService {
     pub async fn update(&self, actor: &str, id: Uuid, req: UpdateTicketRequest) -> Result<Ticket, ApiError> {
         let mut ticket = self.ticket(id).await?;
         let mut changes = Changes::default();
+        let mut updated = Vec::new();
 
         if let Some(to) = req.status
             && to != ticket.status
@@ -134,14 +138,24 @@ impl TicketService {
             && to != ticket.severity
         {
             let from = std::mem::replace(&mut ticket.severity, to);
-            changes.system(&ticket, SystemEvent::SeverityChanged { from, to });
+            updated.push(SystemEvent::SeverityChanged { from, to });
         }
         if let Some(name) = req.assignee_name {
             let to = optional(Some(&name), "assignee_name", MAX_NAME)?;
             if to != ticket.assignee_name {
                 let from = std::mem::replace(&mut ticket.assignee_name, to.clone());
-                changes.system(&ticket, SystemEvent::AssigneeChanged { from, to });
+                updated.push(SystemEvent::AssigneeChanged { from, to });
             }
+        }
+        if !updated.is_empty() {
+            for event in &updated {
+                changes.system(&ticket, event.clone());
+            }
+            changes.events.push(DomainEvent::TicketUpdated {
+                ticket_id: ticket.id,
+                actor: actor.to_owned(),
+                changes: updated,
+            });
         }
 
         self.commit(&mut ticket, changes).await?;
@@ -192,7 +206,7 @@ impl TicketService {
         ticket.updated_at = Utc::now();
         self.repo.save(ticket, &changes.messages).await?;
         for event in changes.events {
-            self.events.emit(event);
+            self.events.emit(event).await;
         }
         Ok(())
     }

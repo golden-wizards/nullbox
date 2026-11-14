@@ -5,6 +5,7 @@ use nullbox_domain::Message;
 use uuid::Uuid;
 
 use super::extract::{ApiJson, ApiPath, TicketToken};
+use crate::audit::{ActorKind, Entry};
 use crate::dto::{CreateTicketRequest, CreateTicketResponse, CustomerReplyRequest, TicketThread};
 use crate::{ApiError, AppState};
 
@@ -25,7 +26,9 @@ pub async fn get_ticket(
     TicketToken(token): TicketToken,
     ApiPath(id): ApiPath<Uuid>,
 ) -> Result<Json<TicketThread>, ApiError> {
-    Ok(Json(state.tickets.customer_thread(id, &token).await?))
+    let thread = state.tickets.customer_thread(id, &token).await?;
+    state.audit.record(Entry::new(ActorKind::Customer, "ticket.viewed").with_ticket(id)).await;
+    Ok(Json(thread))
 }
 
 pub async fn reply(
