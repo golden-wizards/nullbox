@@ -140,6 +140,23 @@ sqlx database create && sqlx migrate run
 cargo sqlx prepare --workspace     # refresh .sqlx, then commit it
 ```
 
+## What Golden Wizards built
+
+Per upgrade: what we did, where it lives, and what goes beyond the check.
+
+| Upgrade | Where | Beyond the check |
+| --- | --- | --- |
+| Deploy (#32) | `deploy/` (Docker images, `compose.yml`, `Caddyfile`) | Security headers in Caddy (#52); host hardening with ufw and the debug console off (`deploy/harden.sh`, #60); HOT checks pressed after every deploy of main (#61, `scripts/hot-check.sh`) |
+| Observability (#35) | `crates/api/src/http/mod.rs`, `main.rs` | Prometheus `/metrics`, W3C trace ids on every request, structured JSON logs |
+| SEO (#37) | `apps/web/` | Meta tags, `robots.txt`, `sitemap.xml`, `llms.txt` and an ARD manifest for agents |
+| Payments (#38, #62) | `crates/api/src/http/payments.rs` | Stripe Checkout in test mode with a signature-verified webhook; `STRIPE_MODE` for recurring prices |
+| MCP server (#36, #42) | `crates/api/src/http/mcp.rs`, `docs/MCP.md` | 7 tools at `/mcp` behind a bearer token with constant-time compare; `scripts/mcp-agent-demo.sh` shows an agent working a ticket end to end |
+| Login (#41) | `crates/api/src/http/` | Username/password with server-side sessions; members-only inbox |
+| Security fixes | `crates/api/src/http/admin.rs` | Leaked `ADMIN_TOKEN` default removed, export off when unset (#45); customer token IDOR fixed so a token only opens its own ticket (#53) |
+| CI and guardrails | `.github/workflows/` | Rust and web checks with caching (#30), gitleaks secret scan on new commits (#29), Super Linter, auto-merge, Dependabot for npm, Cargo, Docker and Actions (#57) |
+| Team workflow | `AGENTS.md`, `docs/SITREP.md` | One issue, one claim, one worktree, one PR, with a race-safe claim protocol for many parallel AI sessions; PR CI watcher (`scripts/pr-watch.sh`) |
+| Creativity (#49) | `apps/web/src/copy/serious.ts` | **Serious Mode**: a third copy dictionary in the language switcher that drains all joy from the UI. The eggs below still work |
+
 ## Lore
 
 In the beginning there was the Inbox, and the Inbox was without form, and full.
