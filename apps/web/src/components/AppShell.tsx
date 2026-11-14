@@ -8,7 +8,11 @@ import styles from "./AppShell.module.css";
 import { EnterpriseMode } from "./EnterpriseMode";
 import { meKey } from "./RequireLogin";
 
-const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", ja: "日本語" };
+const LANGUAGE_NAMES: Record<Locale, string> = {
+  en: "English",
+  ja: "日本語",
+  serious: "Serious Mode",
+};
 
 export function AppShell() {
   const copy = useCopy();
