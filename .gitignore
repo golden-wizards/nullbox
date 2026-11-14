@@ -6,3 +6,6 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+
+# Local secret denylist for the secret-check hook/skill (never commit)
+.secrets.local
