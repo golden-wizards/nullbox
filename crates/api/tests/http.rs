@@ -10,15 +10,21 @@ use serde_json::{Value, json};
 use tower::ServiceExt;
 
 async fn app() -> Router {
+    app_with(|_| {}).await
+}
+
+/// Like `app()`, but lets a test tweak the config first.
+async fn app_with(tweak: impl FnOnce(&mut Config)) -> Router {
     let pool = db::connect_in_memory().await.expect("in-memory db");
-    let config = Config {
+    let mut config = Config {
         bind_addr: "127.0.0.1:0".parse().unwrap(),
         database_url: "sqlite::memory:".into(),
         cors_allowed_origins: vec!["http://localhost:5173".into()],
         public_web_url: "http://localhost:5173".into(),
-        admin_token: "test-admin-token".into(),
+        admin_token: Some("test-admin-token".into()),
         mcp_token: Some("test-mcp-token".into()),
     };
+    tweak(&mut config);
     http::router(AppState::new(pool, config))
 }
 
@@ -156,6 +162,15 @@ async fn admin_export_needs_the_admin_token() {
     let (status, tickets) = send(&app, "GET", "/api/admin/export", &admin, None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(tickets[0]["customer_email"], "a@example.com");
+}
+
+#[tokio::test]
+async fn admin_export_is_off_without_an_admin_token() {
+    let app = app_with(|config| config.admin_token = None).await;
+    for headers in [&[][..], &[("x-admin-token", "")][..], &[("x-admin-token", "test-admin-token")][..]] {
+        let (status, error) = send(&app, "GET", "/api/admin/export", headers, None).await;
+        assert_eq!((status, &error["code"]), (StatusCode::FORBIDDEN, &json!("forbidden")));
+    }
 }
 
 const MCP_AUTH: (&str, &str) = ("authorization", "Bearer test-mcp-token");
