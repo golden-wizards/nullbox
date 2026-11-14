@@ -15,7 +15,7 @@ async fn app() -> Router {
         database_url: "sqlite::memory:".into(),
         cors_allowed_origins: vec!["http://localhost:5173".into()],
         public_web_url: "http://localhost:5173".into(),
-        admin_token: "test-admin-token".into(),
+        admin_token: Some("test-admin-token".into()),
         // Any settings added later keep their env/defaults.
         ..Config::from_env().expect("config")
     };
