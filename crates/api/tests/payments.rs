@@ -51,6 +51,7 @@ fn config(api_base: &str, enabled: bool) -> StripeConfig {
         amount: 500,
         currency: "usd".into(),
         product_name: "Nullbox Pro".into(),
+        mode: "payment".into(),
         api_base: api_base.into(),
         public_web_url: "https://example.test".into(),
     }

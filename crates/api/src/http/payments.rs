@@ -44,6 +44,8 @@ pub struct StripeConfig {
     pub currency: String,
     /// `STRIPE_PRODUCT_NAME` (default `Nullbox Pro`).
     pub product_name: String,
+    /// `STRIPE_MODE`: `payment` (default) or `subscription`, which a recurring `STRIPE_PRICE_ID` needs.
+    pub mode: String,
     /// `STRIPE_API_BASE` (default `https://api.stripe.com`); tests point it at a fake.
     pub api_base: String,
     /// Where the web app lives (`PUBLIC_WEB_URL`), for the success and cancel URLs.
@@ -75,6 +77,7 @@ impl StripeConfig {
             amount: opt("STRIPE_AMOUNT").and_then(|v| v.parse().ok()).filter(|a| *a > 0).unwrap_or(500),
             currency: opt("STRIPE_CURRENCY").unwrap_or_else(|| "usd".into()).to_lowercase(),
             product_name: opt("STRIPE_PRODUCT_NAME").unwrap_or_else(|| "Nullbox Pro".into()),
+            mode: opt("STRIPE_MODE").filter(|m| m == "subscription").unwrap_or_else(|| "payment".into()),
             api_base: opt("STRIPE_API_BASE")
                 .unwrap_or_else(|| "https://api.stripe.com".into())
                 .trim_end_matches('/')
@@ -177,7 +180,7 @@ async fn create_checkout(
     let request = body.map(|Json(b)| b).unwrap_or_default();
 
     let mut form: Vec<(String, String)> = vec![
-        ("mode".into(), "payment".into()),
+        ("mode".into(), c.mode.clone()),
         ("success_url".into(), format!("{}/pay/success?session_id={{CHECKOUT_SESSION_ID}}", c.public_web_url)),
         ("cancel_url".into(), format!("{}/pay?canceled=1", c.public_web_url)),
         ("line_items[0][quantity]".into(), "1".into()),
