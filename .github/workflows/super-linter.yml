@@ -42,8 +42,20 @@ jobs:
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_CHECKOV: false
           VALIDATE_EDITORCONFIG: false
+          # dotenv-linter wants keys alphabetical; .env.example is grouped by topic
+          VALIDATE_ENV: false
           VALIDATE_GIT_COMMITLINT: false
+          # JS/TS are linted and formatted by Biome (BIOME_LINT here, `pnpm lint` in CI).
+          # The bundled ESLint cannot resolve our extensionless imports, and Prettier
+          # disagrees with the Biome formatting.
+          VALIDATE_JAVASCRIPT_ES: false
+          VALIDATE_JAVASCRIPT_PRETTIER: false
           VALIDATE_JSCPD: false
+          VALIDATE_JSX: false
+          VALIDATE_JSX_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_NATURAL_LANGUAGE: false
+          VALIDATE_TSX: false
+          VALIDATE_TYPESCRIPT_ES: false
+          VALIDATE_TYPESCRIPT_PRETTIER: false
           VALIDATE_XML: false
