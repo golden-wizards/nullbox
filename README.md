@@ -112,7 +112,7 @@ address, or to an empty value when one web server serves both the web app and `/
 | Postgres, multi-tenancy, backups | `TicketRepository` in `crates/api/src/repo/mod.rs` |
 | OpenTelemetry | everything logs through `tracing`; add a layer in `main.rs` |
 | Payments | a new route next to the others in `crates/api/src/http/mod.rs`; a page in `apps/web/src/router.tsx`; keys in `Config` |
-| MCP server for AI agents | a service at `/mcp`, next to the `/api` nest in `router()`; let its tools call `TicketService`, like the worker handlers do |
+| MCP server for AI agents | done: `/mcp`, see `docs/MCP.md` |
 | More languages, Serious Mode | add a dictionary of type `Copy` next to `apps/web/src/copy/en.ts` |
 | Tauri desktop/mobile | `VITE_API_BASE_URL` + `createHashRouter` in `apps/web/src/router.tsx` |
 
