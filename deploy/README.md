@@ -8,7 +8,14 @@ Production runs on `team-06` (`ssh team-06`) from `/opt/nullbox/deploy` (`compos
 - `web`: Caddy with the built web app. It handles TLS for team-06.fasthacks.cloud, serves `/` (SPA
   fallback) and proxies `/api/*` to `api:3000`. Only this container publishes ports (80/443).
 
-Manual deploy (until CI/CD, #8, does it): build the images where there's CPU, ship them, restart.
+Automatic deploy: `.github/workflows/deploy.yml` runs after CI passes on `main`. It pushes
+`ghcr.io/golden-wizards/nullbox-{api,web}:<sha>` to GHCR, ships `compose.yml` and `Caddyfile`, writes the image
+refs into `/opt/nullbox/deploy/.env`, restarts, and fails unless `/api/healthz` answers `{"status":"ok"}`. It needs
+the `DEPLOY_SSH_KEY` secret (and optionally a `DEPLOY_KNOWN_HOSTS` variable) in the GitHub `production` environment.
+Redeploy by hand with Actions → deploy → Run workflow.
+
+Manual deploy (fallback): build the images where there's CPU, ship them, restart. A manual deploy must clear the
+image refs from `.env`, or compose keeps running the last automatic release.
 
 ```sh
 docker build -f deploy/api.Dockerfile -t nullbox-api:latest .
