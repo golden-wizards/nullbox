@@ -1,0 +1,30 @@
+# Secret-scanning rules for nullbox. Used by /secret-check, the git hooks (#2) and CI (#3).
+# Never put a real secret in this file: rules match shapes, real values go in .secrets.local.
+title = "nullbox"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "nullbox-admin-token"
+description = "Nullbox ADMIN_TOKEN (nbx_ prefix)"
+regex = '''nbx_[A-Za-z0-9_]{20,}'''
+keywords = ["nbx_"]
+
+[[rules]]
+id = "hot-team-code-bearer"
+description = "HOT team login code sent as a bearer token"
+regex = '''(?i)bearer\s+([a-z]{3,}(?:-[a-z]{3,}){3})\b'''
+secretGroup = 1
+keywords = ["bearer"]
+
+[[rules]]
+id = "hot-team-code-assignment"
+description = "HOT team login code assigned to a variable"
+regex = '''(?i)(?:hot|team)[_-]?(?:token|code|login)\s*[:=]\s*["']?([a-z]{3,}(?:-[a-z]{3,}){3})\b'''
+secretGroup = 1
+keywords = ["hot_", "hot-", "team_", "team-", "hottoken", "teamtoken", "teamcode"]
+
+[[allowlists]]
+description = "Example env file holds no real values"
+paths = ['''(^|/)\.env\.example$''']
