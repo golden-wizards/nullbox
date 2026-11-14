@@ -130,6 +130,41 @@ async fn customer_and_worker_round_trip() {
 }
 
 #[tokio::test]
+async fn a_ticket_token_only_opens_its_own_ticket() {
+    let app = app().await;
+    let mut tickets = Vec::new();
+    for subject in ["Ticket A", "Ticket B"] {
+        let (status, created) =
+            send(&app, "POST", "/api/tickets", &[], Some(json!({ "subject": subject, "body": "x", "severity": "p3" })))
+                .await;
+        assert_eq!(status, StatusCode::CREATED);
+        tickets.push((
+            created["ticket"]["id"].as_str().unwrap().to_owned(),
+            created["access_token"].as_str().unwrap().to_owned(),
+        ));
+    }
+    let (a_token, (b_id, _)) = (&tickets[0].1, &tickets[1]);
+
+    // A's token on B's thread and reply endpoints looks like a missing ticket.
+    let a_auth = [("x-ticket-token", a_token.as_str())];
+    let (status, error) = send(&app, "GET", &format!("/api/public/tickets/{b_id}"), &a_auth, None).await;
+    assert_eq!((status, &error["code"]), (StatusCode::NOT_FOUND, &json!("not_found")));
+    let (status, error) = send(
+        &app,
+        "POST",
+        &format!("/api/public/tickets/{b_id}/messages"),
+        &a_auth,
+        Some(json!({ "body": "not my ticket" })),
+    )
+    .await;
+    assert_eq!((status, &error["code"]), (StatusCode::NOT_FOUND, &json!("not_found")));
+
+    // Nothing was written to B.
+    let (_, thread) = send(&app, "GET", &format!("/api/tickets/{b_id}"), &[WORKER], None).await;
+    assert!(thread["messages"].as_array().unwrap().iter().all(|m| m["body"] != "not my ticket"));
+}
+
+#[tokio::test]
 async fn errors_share_one_shape() {
     let app = app().await;
 
