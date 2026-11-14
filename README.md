@@ -90,7 +90,7 @@ stable and shared with TypeScript; `message` is English and for developers only.
 | GET | `/healthz` | liveness |
 | GET | `/teapot` | 418, as specified by RFC 2324 |
 
-Worker endpoints are **unprotected**: `X-Actor-Name` is whatever the client says it is.
+Worker endpoints need a login session (#14): `POST /auth/signup` or `POST /auth/login` with `{ username, password }` sets an `HttpOnly` session cookie (API clients can send it as `Authorization: Bearer <token>`). `GET /auth/me` returns the signed-in worker, and `POST /auth/logout` ends the session. `X-Actor-Name` is no longer trusted.
 
 ## Configuration
 
