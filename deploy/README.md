@@ -20,3 +20,10 @@ scp deploy/compose.yml deploy/Caddyfile team-06:/tmp/ && ssh team-06 'sudo mv /t
 ssh team-06 'cd /opt/nullbox/deploy && sudo docker compose up -d --no-build --force-recreate'
 curl -fsS https://team-06.fasthacks.cloud/api/healthz   # {"status":"ok"}
 ```
+
+Server hardening (#11: debug console off, ufw allowing only 22/80/443) is in `harden.sh`. Safe to re-run;
+keep an SSH session open while it runs:
+
+```sh
+ssh team-06 'sudo bash -s' < deploy/harden.sh
+```
