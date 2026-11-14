@@ -21,31 +21,127 @@ Secrets live on the team page, in `/etc/nullbox/nullbox.env` on the server (0600
 GitHub `production` environment. Nowhere else. **Run `/secret-check` before every commit, push and
 PR.** If a secret leaks anyway: rotate it first, then tell the team, then clean history.
 
-## Workflow
+## Workflow: one issue, one claim, one worktree, one PR
 
-1. **Claim an issue:** assign yourself (or comment "taking this") before you start. No issue? Open one.
-2. **Branch from fresh `main`:**
-   `git fetch origin && git switch -c <type>/<issue>-<slug> origin/main`
-   - types: `feat` `fix` `sec` `ci` `infra` `docs` `chore`
-   - e.g. `infra/7-caddy-compose`, `sec/9-rotate-admin-token`
-3. **Commit small and often.** Imperative subject (≤72 chars). Reference the issue in the body.
-   Claude-assisted commits end with a `Co-Authored-By:` trailer.
-4. **Run the checks** for what you touched:
+Several people (and several Claude sessions per person) work at the same time. This protocol
+keeps two of us from building the same thing. **Follow it for every issue, in order.** No issue
+for what you want to do? Open one first.
+
+Commands use `gh api` (REST) because it works everywhere, including setups where `gh issue …`
+and GraphQL are blocked. Set these once per shell:
+
+```sh
+R=repos/golden-wizards/nullbox
+ME=$(gh api user --jq .login)
+```
+
+### 1. Pick a free issue
+
+An issue is **free** when it is open, has **no assignee** and **no `in-progress` label**. Take
+the lowest milestone first (see `docs/BATTLEPLAN.md`). Issues labelled `repo-settings` are for
+an org admin.
+
+```sh
+gh api "$R/issues?state=open&assignee=none&per_page=100" \
+  --jq '.[] | select(.pull_request|not) | select([.labels[].name]|index("in-progress")|not)
+        | "#\(.number) [\(.milestone.title // "-")] \(.title)"'
+```
+
+If the user named an issue, check that it's free. If it isn't, stop and tell them who holds it.
+
+### 2. Claim it (before writing any code)
+
+Choose the branch name first: `<type>/<issue>-<slug>` (types: `feat` `fix` `sec` `ci` `infra`
+`docs` `chore`), e.g. `infra/7-caddy-compose`.
+
+```sh
+N=7; B=infra/7-caddy-compose
+gh api $R/issues/$N/assignees -f "assignees[]=$ME"
+gh api $R/issues/$N/labels -f 'labels[]=in-progress'
+CID=$(gh api $R/issues/$N/comments -f body="🔒 Claimed by @$ME, branch \`$B\`." --jq .id)
+```
+
+**Then verify you won.** Two sessions can claim at the same moment, and both may be the same
+GitHub user. The claim comment with the **lowest id** wins:
+
+```sh
+gh api $R/issues/$N/comments --jq '[.[] | select(.body|startswith("🔒 Claimed")) | .id] | min'
+```
+
+If that isn't `$CID`, you lost: delete your comment (`gh api -X DELETE $R/issues/comments/$CID`),
+leave the assignee and label alone, and pick another issue.
+
+### 3. Work in a dedicated worktree
+
+The main clone stays on `main` and is only used to create worktrees. Never edit in it. Each issue
+gets its own worktree next to the clone:
+
+```sh
+git fetch origin
+git worktree add -b "$B" "../nullbox-worktrees/$N-<slug>" origin/main
+cd "../nullbox-worktrees/$N-<slug>"
+```
+
+Then do all the work, and run Claude, from inside that worktree.
+
+- Gitignored files are **not** shared between worktrees. Link your secret denylist:
+  `ln -s "$(git worktree list | head -1 | cut -d' ' -f1)/.secrets.local" .secrets.local`.
+  Run `pnpm install` per worktree (the pnpm store is shared, so it's fast).
+- Optional, to save disk: share one Rust build dir with
+  `export CARGO_TARGET_DIR=<main clone>/target`. Parallel builds then wait on each other.
+
+### 4. Build it
+
+- Commit small and often. Imperative subject (≤72 chars), `Refs #N` in the body.
+  Claude-assisted commits end with a `Co-Authored-By:` trailer.
+- Push your branch early (`git push -u origin "$B"`) so the work is visible and backed up.
+- Stay in scope. Found something else? Open a new issue, don't fix it here.
+- Long task? Comment progress on the issue now and then, so the claim is visibly alive.
+
+### 5. Finish: checks, then a PR
+
+1. Rebase onto the latest main if it moved: `git fetch origin && git rebase origin/main`.
+2. Run the checks for what you touched:
    - Rust: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`
    - Web: `pnpm lint`, `pnpm test`, `pnpm build`
-   - Always: `/secret-check`
-5. **Open a PR to `main`.** Title = what it does. Body: summary, how it was tested, `Closes #N`.
-   Keep PRs small, since a 30-minute PR beats a 3-hour one at a hackathon.
-6. **Squash-merge** once CI is green; the branch gets deleted. Merge your own PR if nobody objects
-   within a reasonable time, and ask in chat for anything risky (server, secrets, history).
+   - Always: `/secret-check` on the outgoing commits **and** on the PR body
+3. Push and open the PR:
+   ```sh
+   git push -u origin "$B"   # --force-with-lease if you rebased
+   gh api $R/pulls -f title="<what it does>" -f head="$B" -f base=main -F body=@/tmp/pr.md
+   ```
+   Body: summary, how it was tested, and `Closes #N` on its own line (that auto-closes the issue
+   on merge). Keep PRs small, since a 30-minute PR beats a 3-hour one at a hackathon.
+4. Comment the PR link on the issue. Leave the `in-progress` label on until the PR is merged.
+5. Squash-merge once CI is green. Merge your own PR if nobody objects within a reasonable time,
+   and ask in chat for anything risky (server, secrets, history).
+
+### 6. Clean up after merge
+
+```sh
+cd <main clone> && git switch main && git pull --ff-only
+git worktree remove "../nullbox-worktrees/$N-<slug>"
+git branch -D "$B"     # -D because squash merges aren't ancestors of main
+gh api -X DELETE "$R/issues/$N/labels/in-progress"
+```
+
+### Releasing a claim
+
+Giving up or blocked? Don't sit on it. Comment `🔓 Released by @$ME: <why / what's done>`, remove
+yourself as assignee (`gh api -X DELETE $R/issues/$N/assignees -f "assignees[]=$ME"`), remove
+the `in-progress` label, and push any useful work on the branch, mentioning it in the comment.
+
+**Stale claims:** if a claimed issue has had no commits, comments or PR for ~2 hours, ask the
+holder in chat. Take it over only after they agree (or the team does), and say so on the issue.
 
 ### Never
 
 - Push directly to `main` (everything goes through a PR) or force-push `main`. The only planned
   exception is the coordinated `.env` history purge (#10).
+- Start coding before your claim has won, or work on an issue someone else holds.
 - Force-push someone else's branch. Your own branch: `--force-with-lease` only.
 - Set a repo-local `user.name`/`user.email`. Use your global git identity.
-- Run two Claude sessions in the same clone. Use `git worktree add` for parallel work.
+- Run two Claude sessions in the same worktree, or edit in the main clone.
 
 ## Server and HOT
 
