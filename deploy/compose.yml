@@ -1,0 +1,21 @@
+# Production stack on team-06. Only Caddy publishes ports (Docker ports bypass ufw).
+# Secrets/config come from /etc/nullbox/nullbox.env on the server (never in git).
+name: nullbox
+services:
+  api:
+    image: ${NULLBOX_API_IMAGE:-nullbox-api:latest}
+    build: { context: .., dockerfile: deploy/api.Dockerfile }
+    env_file: /etc/nullbox/nullbox.env
+    volumes: [data:/data]
+    restart: unless-stopped
+  web:
+    image: ${NULLBOX_WEB_IMAGE:-nullbox-web:latest}
+    build: { context: .., dockerfile: deploy/web.Dockerfile }
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    depends_on: [api]
+    restart: unless-stopped
+volumes:
+  data:
+  caddy_data:
+  caddy_config:
