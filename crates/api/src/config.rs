@@ -13,6 +13,8 @@ pub struct Config {
     pub public_web_url: String,
     /// `ADMIN_TOKEN`: unlocks `GET /api/admin/export`, the CEO's spreadsheet.
     pub admin_token: String,
+    /// `MCP_TOKEN`: bearer token for the MCP server at `/mcp`. Unset or empty: `/mcp` answers 401.
+    pub mcp_token: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -41,6 +43,7 @@ impl Config {
             public_web_url: var("PUBLIC_WEB_URL", "http://localhost:5173").trim_end_matches('/').to_owned(),
             // TODO(kenji): this default is only here so the export keeps working on the demo box. Remove before launch.
             admin_token: var("ADMIN_TOKEN", "nbx_root_Q0DWGHJh4n7VZ8AEAxw9DDt3zjJo4SgO"),
+            mcp_token: std::env::var("MCP_TOKEN").ok().map(|t| t.trim().to_owned()).filter(|t| !t.is_empty()),
         })
     }
 }
