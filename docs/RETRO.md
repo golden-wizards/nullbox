@@ -122,5 +122,8 @@ In numbers: 40 pull requests merged, all between 05:56Z and 07:27Z.
 cd docs/presentation
 npm install
 npm run dev      # present locally
-npm run build    # static site in dist/, served under /slides/
+npm run build    # static site in dist/
 ```
+
+The web image builds the deck too (`deploy/web.Dockerfile`), so every deploy of `main` serves it
+at <https://team-06.fasthacks.cloud/slides/>.
