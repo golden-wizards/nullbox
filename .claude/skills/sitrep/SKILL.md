@@ -1,13 +1,13 @@
 ---
 name: sitrep
-description: Pull the team's live HOT scoreboard (orga.fasthacks.cloud) and sync docs/SITREP.md and the GitHub issues with what has actually passed, failed or unlocked. Use when the user asks for the score, the status of upgrades, "where are we", or to update the SITREP/board.
+description: Pull the team's HOT checks and the public leaderboard (orga.fasthacks.cloud), press Check for changes that are live but not yet scored, and sync docs/SITREP.md and the GitHub issues. Use when the user asks for the score, the leaderboard, the status of upgrades, "where are we", or to update the SITREP/board, and as part of the regular checks in CLAUDE.md.
 ---
 
 # /sitrep
 
-Sync the team's shared picture with what HOT actually reports. **Read-only on HOT:** never POST
-to `/api/team/checks/*` (pressing Check counts toward the 3-failure limit) unless the user
-explicitly asks for that specific check.
+Sync the team's shared picture with what HOT and the public leaderboard actually report. The
+only write to HOT is pressing **Check** (`POST /api/team/checks/<key>`), and only under the rules
+in step 2b, because failures count toward the 3-failure limit. Never call any other write endpoint.
 
 ## 1. Get the token without leaking it
 
@@ -30,6 +30,27 @@ curl -fsS -H "Authorization: Bearer $HOT_TOKEN" https://orga.fasthacks.cloud/api
 
 Also check the live site yourself:
 `curl -s -o /dev/null -w '%{http_code}' https://team-06.fasthacks.cloud/api/healthz`.
+
+Then the **public leaderboard** (no token needed, also shown at https://orga.fasthacks.cloud/):
+
+```sh
+curl -fsS https://orga.fasthacks.cloud/api/scoreboard | jq -r '
+  "time left: \(((.ends_at|sub("\\.[0-9]+Z$";"Z")|fromdate) - (.now|sub("\\.[0-9]+Z$";"Z")|fromdate))/60|floor) min",
+  (.teams | to_entries[] | "\(.key+1). \(.value.name)  \(.value.points) pts  [\(.value.passed|join(", "))]"),
+  "recent:", (.log[0:8][] | "  \(.passed_at[11:16]) \(.team_name): \(.kind) \(.check)")'
+```
+
+## 2b. Press Check for what's live (only when it's safe)
+
+When a merged and deployed change should pass a check that hasn't passed yet:
+
+1. Verify it from outside the server yourself (e.g. `curl` the live URL), using what HOT says it
+   checks (`.checks[].last_run.note` and the team page describe it).
+2. If `failures` for that key is **0 or 1**, press Check:
+   `curl -fsS -X POST -H "Authorization: Bearer $HOT_TOKEN" https://orga.fasthacks.cloud/api/team/checks/<key>`
+   then re-read `/api/team` (filtered as above) for the result. If `failures` is **2**, don't press
+   it: ask the user, because a third failure means asking a judge.
+3. Comment the result on the mapped issue (step 5).
 
 ## 3. Map checks to issues
 
@@ -68,5 +89,6 @@ If HOT reports a key that isn't in this table, flag it and add it here in the sa
 
 ## 6. Report back
 
-Keep it short: score, what changed since the last SITREP, what's unlocked and unowned, and the
-best next move according to `docs/BATTLEPLAN.md`.
+Keep it short: time left, our rank and points against the leader, what changed since the last
+SITREP, anything live but not yet checked, what's unlocked and unowned, and the best next move
+according to `docs/BATTLEPLAN.md`. Remind the user to pull `main` if it moved.
