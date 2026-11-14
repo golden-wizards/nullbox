@@ -14,12 +14,14 @@ pub enum Action {
     UpdateTicket,
     YeetTicket,
     ViewBacklogStats,
+    ViewAuditLog,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Resource {
     Inbox,
     Ticket(Uuid),
+    AuditLog,
 }
 
 /// MVP: everyone may do everything. Replace the body with real rules (roles, teams, tenants).

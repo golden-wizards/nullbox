@@ -107,7 +107,8 @@ address, or to an empty value when one web server serves both the web app and `/
 | --- | --- |
 | Login: passwords, SSO, sessions | Done for passwords (#14): `crates/api/src/auth.rs` (argon2id, sessions), routes in `crates/api/src/http/auth.rs`, the `Actor` extractor reads the session cookie; web: `RequireLogin` + `/login`. SSO plugs into `AuthService` (accounts with no password) |
 | Roles / permissions | `policy::can` in `crates/api/src/policy.rs` (always `true` today) |
-| Audit log, webhooks, email, metrics | `EventSink` in `crates/api/src/events.rs` (only logs today); refused requests in the `Actor` extractor |
+| Audit log | Done (#13): `AuditLog` in `crates/api/src/audit.rs`, append-only `audit_log` table; domain events arrive as an `EventSink`, refused requests from the `Actor` extractor; read it at `GET /api/audit` (signed in) |
+| Webhooks, email, metrics | another `EventSink` in `crates/api/src/events.rs`, added to the `FanOut` in `lib.rs` |
 | Rate limiting, tracing exporters, CORS hardening | `middleware()` in `crates/api/src/http/mod.rs` |
 | Postgres, multi-tenancy, backups | `TicketRepository` in `crates/api/src/repo/mod.rs` |
 | OpenTelemetry | everything logs through `tracing`; add a layer in `main.rs` |

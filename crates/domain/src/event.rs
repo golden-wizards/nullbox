@@ -25,6 +25,7 @@ pub enum DomainEvent {
         ticket_id: Uuid,
         number: i64,
         severity: Severity,
+        subject: String,
     },
     StatusChanged {
         ticket_id: Uuid,
@@ -42,5 +43,11 @@ pub enum DomainEvent {
     TicketYeeted {
         ticket_id: Uuid,
         actor: String,
+    },
+    /// A worker changed severity or assignee (status changes are `StatusChanged`).
+    TicketUpdated {
+        ticket_id: Uuid,
+        actor: String,
+        changes: Vec<SystemEvent>,
     },
 }

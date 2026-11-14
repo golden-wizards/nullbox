@@ -7,6 +7,7 @@ use nullbox_domain::Ticket;
 
 use super::extract::ADMIN_TOKEN_HEADER;
 use super::mcp::constant_time_eq;
+use crate::audit::{ActorKind, Entry};
 use crate::{ApiError, AppState};
 
 /// Every ticket, with customer names and emails. Guarded by `X-Admin-Token`, which
@@ -18,7 +19,13 @@ pub async fn export(State(state): State<AppState>, headers: HeaderMap) -> Result
         _ => false,
     };
     if !ok {
+        let reason = if token.is_some() { "wrong admin token" } else { "no admin token" };
+        let detail = serde_json::json!({ "reason": reason });
+        state.audit.record(Entry::new(ActorKind::Anonymous, "admin.export").denied().with_detail(detail)).await;
         return Err(ApiError::Forbidden);
     }
-    Ok(Json(state.tickets.export().await?))
+    let tickets = state.tickets.export().await?;
+    let detail = serde_json::json!({ "tickets": tickets.len() });
+    state.audit.record(Entry::new(ActorKind::Admin, "admin.export").with_detail(detail)).await;
+    Ok(Json(tickets))
 }

@@ -1,6 +1,7 @@
 //! Routes and the middleware stack.
 
 mod admin;
+mod audit;
 mod auth;
 mod customer;
 pub mod extract;
@@ -42,6 +43,8 @@ pub fn router(state: AppState) -> Router {
         .route("/auth/github/callback", get(sso::callback))
         // admin
         .route("/admin/export", get(admin::export))
+        // audit log (#13), signed-in workers
+        .route("/audit", get(audit::list))
         // utility
         .route("/healthz", get(utility::healthz))
         .route("/teapot", get(utility::teapot))
@@ -69,6 +72,8 @@ pub fn router(state: AppState) -> Router {
 /// `router`, so they pass through here too.
 pub fn middleware<S: Clone + Send + Sync + 'static>(router: Router<S>, config: &Config) -> Router<S> {
     router
+        // Innermost, so everything recorded while handling a request knows where it came from.
+        .layer(axum::middleware::from_fn(crate::audit::with_request_context))
         .layer(cors(config))
         .layer(TraceLayer::new_for_http())
         .layer(axum::middleware::from_fn(observability::observe))
