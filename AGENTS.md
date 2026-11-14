@@ -115,8 +115,50 @@ Then do all the work, and run Claude, from inside that worktree.
    Body: summary, how it was tested, and `Closes #N` on its own line (that auto-closes the issue
    on merge). Keep PRs small, since a 30-minute PR beats a 3-hour one at a hackathon.
 4. Comment the PR link on the issue. Leave the `in-progress` label on until the PR is merged.
-5. Squash-merge once CI is green. Merge your own PR if nobody objects within a reasonable time,
-   and ask in chat for anything risky (server, secrets, history).
+5. **Watch CI and fix it until it's green** (next section). Auto-merge (`auto-merge.yml`)
+   squash-merges the PR once the required checks pass. Ask in chat before merging anything
+   risky (server, secrets, history), or add the `no-automerge` label.
+
+### 5b. Watch CI until green (the PR author's job, every time)
+
+A PR isn't done when it's opened. It's done when it's green and merged. Right after opening the
+PR, **and after every push to it**, start the watcher:
+
+```sh
+scripts/pr-watch.sh <PR>      # polls every 30 s; exits on the first failed check
+```
+
+Claude sessions: run it as a **background** command (`run_in_background`), so you get notified
+when it exits. Don't poll it in a foreground loop. Then act on the exit code:
+
+| Exit | Meaning | Do |
+| --- | --- | --- |
+| `0` | all checks passed (or already merged) | Done. Auto-merge handles the rest. Clean up (step 6) after the merge. |
+| `1` | a check failed. Its annotations and error log lines are printed. | Run the fix loop below. |
+| `2` | merge conflict, or PR closed | `git fetch origin && git rebase origin/main`, resolve, `push --force-with-lease`, watch again |
+| `3` | timed out (45 min) | Look at the PR's checks page. If a check is stuck, re-run it or ask in chat. |
+
+**Fix loop** (in your worktree, on your branch):
+
+1. Read the failure. If the output isn't enough, open the job link or reproduce it locally with
+   the same command the job runs (see `.github/workflows/*.yml`).
+2. **Is it your change?** If the same check is also red on `main`
+   (`gh api "$R/commits/main/check-runs" --jq '.check_runs[] | "\(.name): \(.conclusion)"'`),
+   it isn't your bug. Don't fix it in your PR: comment on the PR, tell the team, and open or point
+   to an issue. If it looks flaky, re-run once:
+   `gh api -X POST "$R/actions/jobs/<job-id>/rerun"`.
+3. Fix the **cause**, run the local checks and `/secret-check`, and commit (`Fix CI: <what>`).
+4. `git push` (with `--force-with-lease` if you rebased), then start the watcher again.
+5. Repeat until it exits `0`. After **3 failed attempts on the same failure**, stop: comment what
+   you tried on the PR and ask a human.
+
+While fixing:
+
+- **Never weaken the checks to get green.** No disabling lint rules, skipping or deleting tests,
+  `continue-on-error`, `#[allow]`/`biome-ignore` without a reason, or allowlisting a secret.
+  Changing CI config belongs in its own PR, agreed with the team.
+- Stay on your own PR. Another person's (or another session's) red PR is theirs: comment, don't push.
+- If the fix changed the scope, update the PR body so it still says what the PR does.
 
 ### 6. Clean up after merge
 
