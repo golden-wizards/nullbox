@@ -1,0 +1,11 @@
+# markdownlint rules for Super Linter (LINTER_RULES_PATH: /) and local runs:
+#   nix shell nixpkgs#markdownlint-cli2 -c markdownlint-cli2 --config .markdown-lint.yml "**/*.md"
+# Mirrors Super Linter's built-in defaults, written down so local and CI agree.
+default: true
+MD004: false # unordered list style
+MD013: false # line length: prose is wrapped by hand, tables and URLs run long
+MD029: false # ordered list prefix
+MD033: false # inline HTML
+MD036: false # emphasis used as a heading
+MD060:
+  style: compact # table pipes: `| a | b |`

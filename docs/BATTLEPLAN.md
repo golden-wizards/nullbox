@@ -17,7 +17,7 @@ into milestones.
 ## Phases
 
 | Phase | Milestone | Goal | Points | Issues |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 0 | **M0 Guardrails** | Secret hooks + CI scan, GitHub security settings, `main` ruleset, team workflow | — | #2 #3 #4 #5 #6 |
 | 1 | **M1 Deploy** | HTTPS on team-06.fasthacks.cloud: web at `/`, API at `/api`, healthz green | 1 | #7 |
 | 2 | **M3 quick wins** | Kill the debug console, firewall on, rotate the leaked admin token | 3 | #9 #11 |
@@ -31,7 +31,7 @@ mostly server work. Phase 2 can start the moment Deploy is green.
 ## Points map
 
 | Area | Upgrades (pts) | Total | Checked by |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Deploy | Deploy (1) | 1 | HOT |
 | CI/CD | auto deploy (2), cache (1), tests (1) | 4 | HOT |
 | Login | members-only page (1), username+password (2), SSO (2) | 5 | HOT, judge |
@@ -48,7 +48,7 @@ biggest single items in M4.
 
 ## Dependencies
 
-```
+```text
 Deploy ──┬── firewall, rotate, history purge, CI/CD
          └── Login ── audit log
                   └── members-only page, SSO
@@ -59,7 +59,7 @@ Rotate ── history purge (rotate first, purge second)
 ## Risks
 
 | Risk | Mitigation |
-|---|---|
+| --- | --- |
 | A secret lands in the public repo | Hooks + CI gitleaks + GitHub push protection; `/secret-check`; rotate first if it happens |
 | A bad merge takes the site down | Required CI checks, smoke test in the deploy job, small PRs |
 | The 2 GB server OOMs compiling Rust | Build images in CI, the server only pulls and runs them |

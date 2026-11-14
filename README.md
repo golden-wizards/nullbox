@@ -58,7 +58,7 @@ Nothing enforces these yet. That's one of your upgrades.
 
 ## Layout
 
-```
+```text
 apps/web                     React + Vite SPA (customer portal at /, worker inbox at /inbox)
   src/api/client.ts          the only module that calls fetch
   src/api/generated/         TS types generated from Rust by ts-rs (committed)
@@ -76,7 +76,7 @@ All JSON, under `/api`. Errors are always `{ "code": ErrorCode, "message": strin
 stable and shared with TypeScript; `message` is English and for developers only.
 
 | Method | Path | Notes |
-|---|---|---|
+| --- | --- | --- |
 | POST | `/tickets` | create, returns `{ ticket, access_token, access_link }` |
 | GET | `/public/tickets/{id}` | customer view, header `X-Ticket-Token` |
 | POST | `/public/tickets/{id}/messages` | customer reply; reopens a resolved ticket |
@@ -104,7 +104,7 @@ address, or to an empty value when one web server serves both the web app and `/
 ## Extension seams
 
 | Want to add | Start here |
-|---|---|
+| --- | --- |
 | Login: passwords, SSO, sessions | `Actor` extractor in `crates/api/src/http/extract.rs` (it gets the `AppState`); `authHeaders()` in `apps/web/src/api/client.ts`; for cookies across origins, see `cors()` in `crates/api/src/http/mod.rs` |
 | Roles / permissions | `policy::can` in `crates/api/src/policy.rs` (always `true` today) |
 | Audit log, webhooks, email, metrics | `EventSink` in `crates/api/src/events.rs` (only logs today); refused requests in the `Actor` extractor |
