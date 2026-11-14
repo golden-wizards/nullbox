@@ -58,7 +58,7 @@ pnpm build                 # 型チェックと、apps/web/dist への本番ビ�
 
 ## 構成
 
-```
+```text
 apps/web                     React + Vite の SPA（お客様用ポータルは /、対応者の受信箱は /inbox）
   src/api/client.ts          fetch を呼ぶ唯一のモジュール
   src/api/generated/         ts-rs が Rust から生成する TS の型（コミット済み）
@@ -76,7 +76,7 @@ migrations/                  SQL マイグレーション。バイナリに埋�
 `code` は変わらない値で、TypeScript と共有しています。`message` は英語で、開発者向けです。
 
 | メソッド | パス | 備考 |
-|---|---|---|
+| --- | --- | --- |
 | POST | `/tickets` | 作成。`{ ticket, access_token, access_link }` を返します |
 | GET | `/public/tickets/{id}` | お客様用の表示。ヘッダー `X-Ticket-Token` が必要 |
 | POST | `/public/tickets/{id}/messages` | お客様の返信。解決済みのチケットは再オープンされます |
@@ -104,7 +104,7 @@ Web はビルド時に読みます: `VITE_API_BASE_URL`。API のオリジンで
 ## 拡張ポイント
 
 | 追加したいもの | ここから始める |
-|---|---|
+| --- | --- |
 | ログイン: パスワード、SSO、セッション | `crates/api/src/http/extract.rs` の `Actor` エクストラクター（`AppState` を受け取ります）、`apps/web/src/api/client.ts` の `authHeaders()`。別オリジンで Cookie を使うなら、`crates/api/src/http/mod.rs` の `cors()` を参照 |
 | ロール / 権限 | `crates/api/src/policy.rs` の `policy::can`（今は常に `true`） |
 | 監査ログ、Webhook、メール、メトリクス | `crates/api/src/events.rs` の `EventSink`（今はログに出すだけ）。拒否したリクエストは `Actor` エクストラクターで |
