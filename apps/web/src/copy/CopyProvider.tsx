@@ -1,10 +1,14 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import en, { type Copy } from "./en";
 import ja from "./ja";
+import serious from "./serious";
 
 /** Add a locale here (and a dictionary of type `Copy`) to support more languages. */
-export const dictionaries = { en, ja } satisfies Record<string, Copy>;
+export const dictionaries = { en, ja, serious } satisfies Record<string, Copy>;
 export type Locale = keyof typeof dictionaries;
+
+/** BCP 47 tag for `<html lang>` and `Intl`: Serious Mode is still English. */
+export const langTag = (locale: Locale): string => (locale === "serious" ? "en" : locale);
 
 const STORAGE_KEY = "nullbox.locale";
 
@@ -36,7 +40,7 @@ export function CopyProvider({
   const [locale, setLocaleState] = useState<Locale>(() => forced ?? initialLocale());
 
   useEffect(() => {
-    document.documentElement.lang = locale;
+    document.documentElement.lang = langTag(locale);
   }, [locale]);
 
   const value = useMemo<CopyContextValue>(
@@ -88,9 +92,12 @@ const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 export function useFormat() {
   const [locale] = useLocale();
   return useMemo(() => {
-    const dateTime = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
-    const relative = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-    const number = new Intl.NumberFormat(locale);
+    const dateTime = new Intl.DateTimeFormat(langTag(locale), {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    const relative = new Intl.RelativeTimeFormat(langTag(locale), { numeric: "auto" });
+    const number = new Intl.NumberFormat(langTag(locale));
     return {
       dateTime: (iso: string) => dateTime.format(new Date(iso)),
       number: (n: number) => number.format(n),
