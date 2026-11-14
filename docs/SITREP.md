@@ -48,7 +48,7 @@ Checked by HOT (automatic), a judge, or both. Deploy must pass before the rest u
 | Security: rotate the leaked secret | 1 | HOT | t-okamoto1122 (#9) | code fix in PR #45; server rotation waits on Deploy |
 | Security: the secret out of git | 1 | HOT | | locked |
 | Security: customer links | 1 | judge | | locked |
-| Security: firewall | 1 | HOT | | locked |
+| Security: firewall | 1 | HOT | HugoGED (#11) | done on server, verified from outside; Check not pressed yet |
 | Security: audit log | 2 | HOT, then judge | | locked |
 | Observability | 2 | HOT | | locked |
 | SEO: Score 100 | 1 | HOT | | locked |
@@ -78,8 +78,9 @@ Tip from HOT: if a check fails 3 times, press **Ask a judge** instead of fightin
    re-clones afterwards.
 2. **Debug console exposed to the internet.** `debug-console.service` runs
    `python3 -m http.server 8888 --bind 0.0.0.0` from `/opt/debug-console`. Confirmed reachable
-   from outside (HTTP 200 on `:8888`). Stop/disable it or bind it to localhost.
-3. **Firewall off.** ufw is installed but disabled. Note: ports published by Docker
+   from outside (HTTP 200 on `:8888`). **Fixed (#11):** unit stopped and disabled.
+3. **Firewall off.** **Fixed (#11):** ufw on, incoming denied except 22/80/443 (see
+   `deploy/harden.sh`). ufw was installed but disabled. Note: ports published by Docker
    (`ports:` in compose) **bypass ufw** — bind containers to `127.0.0.1` behind a reverse proxy,
    or handle the `DOCKER-USER` chain.
 4. **Worker endpoints have no auth.** `X-Actor-Name` is whatever the client sends;
@@ -87,7 +88,7 @@ Tip from HOT: if a check fails 3 times, press **Ask a judge** instead of fightin
 5. **Customer ticket links** are a bearer token in the URL with no recovery (known MVP limit) —
    likely what "Security: customer links" is about.
 
-Open ports on the server right now: 22 (ssh), 8888 (debug console), 53 on localhost only.
+Open ports on the server right now: 22 (ssh), 80 and 443 (Caddy). Verified from outside after #11.
 
 ## Codebase pointers
 
@@ -110,3 +111,4 @@ See `README.md` → "Extension seams" for where each upgrade plugs in. Short ver
 - 2026-11-14 — SSH access set up and verified on HOT; repo cloned; this SITREP written.
 - 2026-11-14 — `main` ruleset applied (#5): PRs only, required checks `secret-scan`/`rust`/`web`, admins bypass; classic protection removed; merge commits disabled.
 - 2026-11-14 — #9: hardcoded leaked `ADMIN_TOKEN` default removed (PR #45). The token on the server still has to be rotated after Deploy.
+- 2026-11-14 — #11: `debug-console.service` disabled, ufw enabled (deny incoming; allow 22/tcp, 80/tcp, 443/tcp, 443/udp) by hand, reproducible via `deploy/harden.sh`. Outside scan: only 22/80/443 open.
