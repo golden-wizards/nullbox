@@ -36,7 +36,9 @@ pub struct AuthService {
 
 /// Hash compared against when the username doesn't exist, so a wrong username takes as
 /// long as a wrong password.
-static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| hash_password("not-a-real-password").unwrap_or_default());
+/// Its password is random and thrown away, so nothing matches it.
+static DUMMY_HASH: LazyLock<String> =
+    LazyLock::new(|| token::generate().ok().and_then(|random| hash_password(&random).ok()).unwrap_or_default());
 
 fn hash_password(password: &str) -> Result<String, ApiError> {
     let mut salt = [0u8; 16];
