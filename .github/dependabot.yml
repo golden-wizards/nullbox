@@ -9,10 +9,10 @@ updates:
     groups:
       all-dependencies:
         patterns:
-          - '*'
+          - "*"
         update-types:
-          - 'minor'
-          - 'patch'
+          - "minor"
+          - "patch"
     schedule:
       interval: weekly
     versioning-strategy: increase
@@ -34,10 +34,10 @@ updates:
     groups:
       cargo:
         patterns:
-          - '*'
+          - "*"
         update-types:
-          - 'minor'
-          - 'patch'
+          - "minor"
+          - "patch"
     schedule:
       interval: weekly
   - package-ecosystem: docker
@@ -47,6 +47,6 @@ updates:
     groups:
       docker:
         patterns:
-          - '*'
+          - "*"
     schedule:
       interval: monthly
