@@ -34,6 +34,8 @@ eligible=$(jq -r --argjson max "$MAX_FAILURES" --argjson want "$want" '
   | select(.failures < $max)
   | select(($want | length) == 0 or (.key as $k | $want | index($k)))
   | select(.last.status != "running" and .last.status != "queued")
+  # Handed over to a judge (e.g. the audit-log trail): pressing again could reset it.
+  | select(.last.status != "waiting_for_judge")
   | .key' <<<"$before")
 
 echo "Score before: $(jq .points <<<"$before") pts"
@@ -47,8 +49,15 @@ for key in $eligible; do
     echo "would press: $key"
     continue
   fi
-  code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $HOT_TOKEN" "$API/team/checks/$key")
-  echo "pressed: $key (HTTP $code)"
+  # 409 repo_busy: checks that write to the repo (ci-cd, ci-cache, tests) can't
+  # run at the same time. Wait for the other one instead of giving up.
+  for _ in $(seq 1 30); do
+    code=$(curl -sS -o /tmp/hot-check-press.json -w '%{http_code}' -X POST -H "Authorization: Bearer $HOT_TOKEN" "$API/team/checks/$key")
+    if [ "$code" != 409 ] || ! grep -q repo_busy /tmp/hot-check-press.json; then break; fi
+    echo "$key: repo busy with another check, waiting…"
+    sleep 10
+  done
+  echo "pressed: $key (HTTP $code$([ "$code" -ge 400 ] && echo ": $(jq -r '.message // empty' /tmp/hot-check-press.json 2>/dev/null)"))"
 done
 [ -n "${DRY_RUN:-}" ] && exit 0
 
