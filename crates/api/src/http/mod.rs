@@ -4,6 +4,7 @@ mod admin;
 mod customer;
 pub mod extract;
 pub mod observability;
+pub mod payments;
 mod utility;
 mod worker;
 
@@ -32,7 +33,9 @@ pub fn router(state: AppState) -> Router {
         // utility
         .route("/healthz", get(utility::healthz))
         .route("/teapot", get(utility::teapot))
-        .route("/metrics", get(observability::metrics));
+        .route("/metrics", get(observability::metrics))
+        // payments (Stripe Checkout; off unless STRIPE_SECRET_KEY is set)
+        .nest("/payments", payments::router(payments::StripeConfig::from_env(&state.config.public_web_url)));
 
     let config = state.config.clone();
     middleware(
