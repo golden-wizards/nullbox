@@ -1,0 +1,12 @@
+{
+  "entries": [
+    {
+      "identifier": "urn:air:team-06.fasthacks.cloud:nullbox:support-api",
+      "displayName": "Nullbox support desk API",
+      "description": "Open and follow customer support tickets on Nullbox.",
+      "type": "application/llms-txt",
+      "url": "https://team-06.fasthacks.cloud/llms.txt",
+      "representativeQueries": ["open a support ticket", "check the status of a support ticket"]
+    }
+  ]
+}
