@@ -1,7 +1,9 @@
 import { createBrowserRouter } from "react-router";
 import { AppShell } from "./components/AppShell";
+import { RequireLogin } from "./components/RequireLogin";
 import { CustomerTicketPage } from "./routes/customer/CustomerTicketPage";
 import { NewTicketPage } from "./routes/customer/NewTicketPage";
+import { LoginPage } from "./routes/LoginPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
 import { PayPage, PaySuccessPage } from "./routes/payments/PayPage";
 import { InboxPage } from "./routes/worker/InboxPage";
@@ -18,9 +20,15 @@ export const router = createBrowserRouter([
       // customer portal
       { path: "/", element: <NewTicketPage /> },
       { path: "/t/:id", element: <CustomerTicketPage /> },
-      // worker inbox
-      { path: "/inbox", element: <InboxPage /> },
-      { path: "/inbox/:id", element: <WorkerTicketPage /> },
+      // worker inbox: members only (#14)
+      { path: "/login", element: <LoginPage /> },
+      {
+        element: <RequireLogin />,
+        children: [
+          { path: "/inbox", element: <InboxPage /> },
+          { path: "/inbox/:id", element: <WorkerTicketPage /> },
+        ],
+      },
       // payments (Stripe Checkout)
       { path: "/pay", element: <PayPage /> },
       { path: "/pay/success", element: <PaySuccessPage /> },

@@ -2,39 +2,55 @@
 
 use axum::Json;
 use axum::extract::{FromRequest, FromRequestParts, Path, Query};
+use axum::http::header;
 use axum::http::request::Parts;
-use percent_encoding::percent_decode_str;
 
+use crate::auth::SESSION_COOKIE;
 use crate::{ApiError, AppState};
 
 pub const ACTOR_HEADER: &str = "x-actor-name";
 pub const ADMIN_TOKEN_HEADER: &str = "x-admin-token";
 pub const TICKET_TOKEN_HEADER: &str = "x-ticket-token";
 
-/// The worker making the request.
+/// The signed-in worker making the request.
 ///
-/// MVP: trusts the `X-Actor-Name` header (percent-encoded, so Japanese names
-/// survive HTTP headers), which the frontend fills from a name picker.
-/// Anyone can claim to be anyone. To add SSO/JWT, replace only this extractor.
-///
-/// It gets the `AppState`, so a real login can look up a session or a user here,
-/// and a refused request can be written to an audit log before the 401 goes out.
+/// Identity comes from the server-side session (#14): the `nullbox_session` cookie set by
+/// `POST /api/auth/login`, or `Authorization: Bearer <session token>` for API clients.
+/// The old `X-Actor-Name` header is no longer trusted. No valid session: 401.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Actor {
     pub name: String,
 }
 
+/// The session token from the request: the session cookie, else a bearer token.
+pub fn session_token(parts: &Parts) -> Option<String> {
+    let from_cookie = parts
+        .headers
+        .get_all(header::COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .flat_map(|v| v.split(';'))
+        .filter_map(|pair| pair.trim().split_once('='))
+        .find(|(name, _)| *name == SESSION_COOKIE)
+        .map(|(_, value)| value.trim().to_owned());
+    let from_bearer = || {
+        parts
+            .headers
+            .get(header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer "))
+            .map(|v| v.trim().to_owned())
+    };
+    from_cookie.or_else(from_bearer).filter(|token| !token.is_empty())
+}
+
 impl FromRequestParts<AppState> for Actor {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &AppState) -> Result<Self, Self::Rejection> {
-        let raw = parts.headers.get(ACTOR_HEADER).and_then(|v| v.to_str().ok()).ok_or(ApiError::MissingActor)?;
-        let name = percent_decode_str(raw).decode_utf8().map_err(|_| ApiError::MissingActor)?;
-        let name = name.trim();
-        if name.is_empty() || name.chars().count() > 100 {
-            return Err(ApiError::MissingActor);
-        }
-        Ok(Actor { name: name.to_owned() })
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+        let token = session_token(parts).ok_or(ApiError::MissingActor)?;
+        let user = state.auth.session_user(&token).await?.ok_or(ApiError::MissingActor)?;
+        Ok(Actor { name: user.username })
     }
 }
 
