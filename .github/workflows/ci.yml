@@ -1,18 +1,19 @@
-# Tests and lints on every PR and on every push to main.
+# Tests and lints on every PR. On main, deploy.yml calls this workflow before it deploys,
+# so each push to main runs it exactly once.
 # Job names (`rust`, `web`) are the required status checks for main; rename with care.
 name: CI
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  # A new push to a PR cancels its older run; runs on main always finish.
-  group: ci-${{ github.ref }}
+  # A new push to a PR cancels its older run. On main (called from deploy) every run finishes;
+  # `github.workflow` is the caller's name there, so this never queues behind deploy itself.
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

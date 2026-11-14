@@ -1,9 +1,12 @@
-# Deploy main to team-06 after CI passes on it (#8).
+# Deploy main to team-06 on every push, once CI passes (#8).
 #
-# 1. images: build the api and web images (GitHub Actions layer cache) and push them to GHCR,
-#    tagged with the commit SHA and `latest`.
-# 2. deploy: ssh to team-06 as `deploy`, ship compose.yml + Caddyfile, pull the new images,
-#    restart, then smoke-test /api/healthz.
+# Runs as one pipeline so nothing waits on a second workflow to be scheduled:
+#   ci      the same checks as PRs (reusable ci.yml), in parallel with
+#   images  build the api and web images (GitHub Actions layer cache) and push them to GHCR,
+#           tagged with the commit SHA and `latest`;
+#   deploy  once both pass: ssh to team-06 as `deploy`, ship compose.yml + Caddyfile, pull the
+#           new images, restart, then smoke-test /api/healthz.
+# A commit that only touches web files reuses every api layer, so it ships in a few minutes.
 #
 # The workflow name `deploy` is load-bearing: hot-checks.yml runs after it succeeds.
 #
@@ -14,10 +17,7 @@
 name: deploy
 
 on:
-  # Safe here: runs only for green push-to-main CI in this repo and builds that commit.
-  workflow_run: # zizmor: ignore[dangerous-triggers]
-    workflows: [CI]
-    types: [completed]
+  push:
     branches: [main]
   # Manual redeploy of the current main.
   workflow_dispatch:
@@ -25,25 +25,17 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  # Deploys never overlap; a queued deploy waits instead of cancelling the running one.
-  group: deploy-production
-  cancel-in-progress: false
-
 env:
   HOST: team-06.fasthacks.cloud
   REMOTE_DIR: /opt/nullbox/deploy
-  # The commit CI just passed on (or the dispatched commit).
-  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+  SHA: ${{ github.sha }}
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   images:
-    # Only green CI runs from pushes to main in this repo, never PRs from a fork's `main`.
-    if: >-
-      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' ||
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -98,7 +90,11 @@ jobs:
           cache-to: type=gha,scope=web,mode=max
 
   deploy:
-    needs: images
+    needs: [ci, images]
+    # Deploys never overlap; a newer one waits for the running one instead of cancelling it.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -109,8 +105,8 @@ jobs:
       # Lets the server pull from GHCR with this run's short-lived token, even if the packages are private.
       packages: read
     env:
-      API_IMAGE: ${{ needs.images.outputs.api }}:${{ github.event.workflow_run.head_sha || github.sha }}
-      WEB_IMAGE: ${{ needs.images.outputs.web }}:${{ github.event.workflow_run.head_sha || github.sha }}
+      API_IMAGE: ${{ needs.images.outputs.api }}:${{ github.sha }}
+      WEB_IMAGE: ${{ needs.images.outputs.web }}:${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -182,12 +178,12 @@ jobs:
       - name: Smoke test /api/healthz
         run: |
           url="https://$HOST/api/healthz"
-          for i in $(seq 1 20); do
+          for i in $(seq 1 40); do
             if body=$(curl -fsS --max-time 10 "$url") && jq -e '.status == "ok"' <<<"$body" >/dev/null; then
               echo "healthz ok after $i attempt(s): $body"
               exit 0
             fi
-            sleep 6
+            sleep 3
           done
           echo "::error::$url did not answer {\"status\":\"ok\"} within 2 minutes"
           exit 1
