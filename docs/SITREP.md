@@ -45,7 +45,7 @@ Checked by HOT (automatic), a judge, or both. Deploy must pass before the rest u
 | Login: members-only page stays closed | 1 | HOT | | locked |
 | Login: username and password | 2 | judge | | locked |
 | Login: single sign-on (SSO) | 2 | judge | | locked |
-| Security: rotate the leaked secret | 1 | HOT | | locked |
+| Security: rotate the leaked secret | 1 | HOT | t-okamoto1122 (#9) | code fix in PR #45; server rotation waits on Deploy |
 | Security: the secret out of git | 1 | HOT | | locked |
 | Security: customer links | 1 | judge | | locked |
 | Security: firewall | 1 | HOT | | locked |
@@ -108,3 +108,5 @@ See `README.md` → "Extension seams" for where each upgrade plugs in. Short ver
 ## Log
 
 - 2026-11-14 — SSH access set up and verified on HOT; repo cloned; this SITREP written.
+- 2026-11-14 — `main` ruleset applied (#5): PRs only, required checks `secret-scan`/`rust`/`web`, admins bypass; classic protection removed; merge commits disabled.
+- 2026-11-14 — #9: hardcoded leaked `ADMIN_TOKEN` default removed (PR #45). The token on the server still has to be rotated after Deploy.
