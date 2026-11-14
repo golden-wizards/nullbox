@@ -3,7 +3,7 @@
 
 CREATE TABLE users (
     id            TEXT PRIMARY KEY NOT NULL,
-    username      TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    username      TEXT NOT NULL UNIQUE COLLATE nocase,
     password_hash TEXT,          -- NULL for accounts that only sign in via SSO
     created_at    TEXT NOT NULL
 );
