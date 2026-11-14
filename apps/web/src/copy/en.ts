@@ -122,6 +122,21 @@ const en = {
     assignToMe: "Take it",
   },
 
+  login: {
+    title: "Worker sign-in",
+    intro: "The inbox is for members only. Sign in, or create an account.",
+    signUpTitle: "Create a worker account",
+    username: "Username",
+    password: "Password",
+    passwordHint: "At least 8 characters.",
+    inviteCode: "Invite code (if your team uses one)",
+    signIn: "Sign in",
+    signUp: "Create account",
+    toSignUp: "No account yet? Create one",
+    toSignIn: "Already have an account? Sign in",
+    signOut: "Sign out",
+  },
+
   beast: {
     title: "Backlog Beast",
     moods: {
@@ -153,7 +168,7 @@ const en = {
   errors: {
     not_found: "We looked everywhere. Even under the couch. It's not there.",
     missing_ticket_token: "This page needs your secret link.",
-    missing_actor: "Pick a name first (top right).",
+    missing_actor: "Please sign in first.",
     forbidden: "You shall not pass.",
     validation_failed: "Something in the form doesn't look right. Please check the fields.",
     invalid_status_transition: "That status change isn't allowed. Time only flows one way.",
@@ -161,6 +176,8 @@ const en = {
     service_unavailable: "The server is taking a nap. Try again in a moment.",
     internal: "Something broke on our side. It works on our machine, though.",
     im_a_teapot: "I'm a teapot. Short and stout.",
+    invalid_credentials: "Wrong username or password.",
+    username_taken: "That username is taken. Try another one.",
     network_error: "Can't reach the server. Is it plugged in?",
   } satisfies Record<ErrorCode | "network_error", string>,
 

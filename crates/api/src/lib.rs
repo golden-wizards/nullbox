@@ -8,6 +8,7 @@
 //! - storage: [`repo::TicketRepository`]
 //! - settings: [`config::Config`]
 
+pub mod auth;
 pub mod config;
 pub mod db;
 pub mod dto;
@@ -29,12 +30,14 @@ pub use error::ApiError;
 pub struct AppState {
     pub tickets: Arc<service::TicketService>,
     pub config: Arc<Config>,
+    pub auth: Arc<auth::AuthService>,
 }
 
 impl AppState {
     pub fn new(pool: sqlx::SqlitePool, config: Config) -> Self {
+        let auth = Arc::new(auth::AuthService::from_env(pool.clone()));
         let repo = Arc::new(repo::SqliteTicketRepository::new(pool));
         let events = Arc::new(events::TracingEventSink);
-        Self { tickets: Arc::new(service::TicketService::new(repo, events)), config: Arc::new(config) }
+        Self { tickets: Arc::new(service::TicketService::new(repo, events)), config: Arc::new(config), auth }
     }
 }

@@ -119,6 +119,21 @@ const ja = {
     assignToMe: "引き受ける",
   },
 
+  login: {
+    title: "対応者サインイン",
+    intro: "受信箱はメンバー専用です。サインインするか、アカウントを作成してください。",
+    signUpTitle: "対応者アカウントを作成",
+    username: "ユーザー名",
+    password: "パスワード",
+    passwordHint: "8文字以上。",
+    inviteCode: "招待コード（チームで使っている場合）",
+    signIn: "サインイン",
+    signUp: "アカウント作成",
+    toSignUp: "アカウントがない場合は作成",
+    toSignIn: "アカウントをお持ちの場合はサインイン",
+    signOut: "サインアウト",
+  },
+
   beast: {
     title: "バックログの獣",
     moods: {
@@ -150,7 +165,7 @@ const ja = {
   errors: {
     not_found: "隅々まで探しました。ソファの下まで。ありません。",
     missing_ticket_token: "このページには秘密リンクが必要です。",
-    missing_actor: "まず名前を選んでください（右上）。",
+    missing_actor: "まずサインインしてください。",
     forbidden: "ここを通すわけにはいかない。",
     validation_failed: "入力内容に問題があるようです。各項目をご確認ください。",
     invalid_status_transition: "そのステータス変更はできません。時は一方向にしか流れません。",
@@ -158,6 +173,8 @@ const ja = {
     service_unavailable: "サーバーが昼寝中です。少ししてからもう一度お試しください。",
     internal: "こちら側で何かが壊れました。手元の環境では動くんですけどね。",
     im_a_teapot: "私はティーポットです。",
+    invalid_credentials: "ユーザー名またはパスワードが違います。",
+    username_taken: "そのユーザー名は使われています。別の名前をお試しください。",
     network_error: "サーバーに接続できません。コンセント、抜けてませんか？",
   },
 

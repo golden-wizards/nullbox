@@ -1,6 +1,7 @@
 //! Routes and the middleware stack.
 
 mod admin;
+mod auth;
 mod customer;
 pub mod extract;
 mod mcp;
@@ -29,6 +30,12 @@ pub fn router(state: AppState) -> Router {
         .route("/tickets/{id}/messages", post(worker::add_message))
         .route("/tickets/{id}/yeet", post(worker::yeet_ticket))
         .route("/stats/backlog", get(worker::backlog_stats))
+        // login (#14)
+        .route("/auth/signup", post(auth::sign_up))
+        .route("/auth/login", post(auth::log_in))
+        .route("/auth/logout", post(auth::log_out))
+        .route("/auth/me", get(auth::me))
+        .route("/auth/gate", get(auth::gate))
         // admin
         .route("/admin/export", get(admin::export))
         // utility
@@ -88,4 +95,6 @@ fn cors(config: &Config) -> CorsLayer {
             HeaderName::from_static(ACTOR_HEADER),
             HeaderName::from_static(TICKET_TOKEN_HEADER),
         ])
+        // Session cookies from the web app on another origin (Vite in dev, #14).
+        .allow_credentials(true)
 }

@@ -53,11 +53,25 @@ async fn send(
     (status, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
 }
 
-const WORKER: (&str, &str) = ("x-actor-name", "%E5%B1%B1%E7%94%B0"); // 山田, percent-encoded
+/// Signs up a worker and returns the `Cookie` header value of their session.
+async fn sign_up(app: &Router, username: &str) -> String {
+    let req = Request::builder()
+        .method("POST")
+        .uri("/api/auth/signup")
+        .header("content-type", "application/json")
+        .body(Body::from(json!({ "username": username, "password": "correct horse battery" }).to_string()))
+        .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::CREATED);
+    let set_cookie = res.headers()["set-cookie"].to_str().unwrap();
+    set_cookie.split(';').next().unwrap().to_owned()
+}
 
 #[tokio::test]
 async fn customer_and_worker_round_trip() {
     let app = app().await;
+    let cookie = sign_up(&app, "山田").await;
+    let worker = ("cookie", cookie.as_str());
 
     // Anonymous customer creates a ticket.
     let (status, created) = send(
@@ -85,21 +99,21 @@ async fn customer_and_worker_round_trip() {
     assert_eq!((status, &error["code"]), (StatusCode::NOT_FOUND, &json!("not_found")));
 
     // The worker sees it in the inbox, notes internally and yeets it.
-    let (_, inbox) = send(&app, "GET", "/api/tickets", &[WORKER], None).await;
+    let (_, inbox) = send(&app, "GET", "/api/tickets", &[worker], None).await;
     assert_eq!(inbox.as_array().unwrap().len(), 1);
     let (status, _) = send(
         &app,
         "POST",
         &format!("/api/tickets/{id}/messages"),
-        &[WORKER],
+        &[worker],
         Some(json!({ "body": "it's always DNS", "internal": true })),
     )
     .await;
     assert_eq!(status, StatusCode::CREATED);
-    let (status, yeeted) = send(&app, "POST", &format!("/api/tickets/{id}/yeet"), &[WORKER], None).await;
+    let (status, yeeted) = send(&app, "POST", &format!("/api/tickets/{id}/yeet"), &[worker], None).await;
     assert_eq!((status, &yeeted["status"]), (StatusCode::OK, &json!("resolved")));
 
-    let (_, stats) = send(&app, "GET", "/api/stats/backlog", &[WORKER], None).await;
+    let (_, stats) = send(&app, "GET", "/api/stats/backlog", &[worker], None).await;
     assert_eq!(stats, json!({ "open_count": 0, "beast_mood": "asleep", "oldest_open_age_secs": null }));
 
     // The customer never sees internal notes, and replying reopens the ticket.
@@ -124,7 +138,7 @@ async fn customer_and_worker_round_trip() {
     );
 
     // The worker view does include the note, written by 山田.
-    let (_, thread) = send(&app, "GET", &format!("/api/tickets/{id}"), &[WORKER], None).await;
+    let (_, thread) = send(&app, "GET", &format!("/api/tickets/{id}"), &[worker], None).await;
     let note = thread["messages"].as_array().unwrap().iter().find(|m| m["internal"] == true).unwrap();
     assert_eq!(note["author_name"], "山田");
 }
@@ -167,6 +181,8 @@ async fn a_ticket_token_only_opens_its_own_ticket() {
 #[tokio::test]
 async fn errors_share_one_shape() {
     let app = app().await;
+    let cookie = sign_up(&app, "山田").await;
+    let worker = ("cookie", cookie.as_str());
 
     let (status, error) = send(&app, "GET", "/api/tickets", &[], None).await;
     assert_eq!((status, &error["code"]), (StatusCode::UNAUTHORIZED, &json!("missing_actor")));
@@ -175,7 +191,7 @@ async fn errors_share_one_shape() {
         send(&app, "POST", "/api/tickets", &[], Some(json!({ "subject": " ", "body": "x", "severity": "p4" }))).await;
     assert_eq!((status, &error["code"]), (StatusCode::UNPROCESSABLE_ENTITY, &json!("validation_failed")));
 
-    let (status, error) = send(&app, "GET", "/api/tickets/not-a-uuid", &[WORKER], None).await;
+    let (status, error) = send(&app, "GET", "/api/tickets/not-a-uuid", &[worker], None).await;
     assert_eq!((status, &error["code"]), (StatusCode::NOT_FOUND, &json!("not_found")));
 
     let (status, error) = send(&app, "GET", "/api/teapot", &[], None).await;
