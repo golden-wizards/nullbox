@@ -31,7 +31,7 @@ curl -fsS -H "Authorization: Bearer $HOT_TOKEN" https://orga.fasthacks.cloud/api
 Also check the live site yourself:
 `curl -s -o /dev/null -w '%{http_code}' https://team-06.fasthacks.cloud/api/healthz`.
 
-Then the **public leaderboard** (no token needed, also shown at https://orga.fasthacks.cloud/):
+Then the **public leaderboard** (no token needed, also shown at <https://orga.fasthacks.cloud/>):
 
 ```sh
 curl -fsS https://orga.fasthacks.cloud/api/scoreboard | jq -r '
@@ -55,7 +55,7 @@ When a merged and deployed change should pass a check that hasn't passed yet:
 ## 3. Map checks to issues
 
 | HOT check key(s) | Issue |
-|---|---|
+| --- | --- |
 | `deploy` | #7 |
 | `ci-cd`, `ci-cache`, `tests` | #8 |
 | `security-secret-rotation` | #9 |
@@ -76,12 +76,14 @@ If HOT reports a key that isn't in this table, flag it and add it here in the sa
 - In `docs/SITREP.md`, update the Upgrades table's **Status** column (`passed <time>`,
   `failed ×N: <short note>`, `unlocked`, `locked`) and the TL;DR, bump "Last updated", and add a
   line to the Log. Owners come from the issue assignees (`gh api repos/golden-wizards/nullbox/issues/N`).
+- Keep SITREP markdownlint-clean (Super Linter checks every changed file): table pipes get a space
+  on both sides (`| a | b |`, separator `| --- |`), and URLs go in `<…>` or link syntax, never bare.
 - Branch `docs/sitrep-<yyyymmdd-hhmm>` from fresh `origin/main`, commit, run `/secret-check`, and
   open a PR. Never push to `main`.
 
 ## 5. Update the issues
 
-- Check newly passed: comment "HOT: `<key>` passed at <time>". Close the issue only when **all**
+- Check newly passed: comment `HOT: <key> passed at <time>`. Close the issue only when **all**
   of its mapped checks have passed (judge items: when HOT shows them passed).
 - New failure: comment with HOT's note (it is safe, it's an error message) and the failure count.
   At 2 failures, warn that one more means asking a judge.
