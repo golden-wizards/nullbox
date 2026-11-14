@@ -3,14 +3,15 @@
  *
  * - Base URL from `VITE_API_BASE_URL`, so the same bundle works behind any
  *   origin (Tauri, a CDN, a different domain). No cookies, no same-origin assumptions.
- * - Auth headers are added in `authHeaders()`: that's where a bearer token goes later.
+ * - Worker auth is the HttpOnly session cookie (#14), sent with `credentials: "include"`.
  */
-import { getActorName } from "./actor";
+import type { AuthRequest } from "./generated/AuthRequest";
 import type { BacklogStats } from "./generated/BacklogStats";
 import type { CreateTicketRequest } from "./generated/CreateTicketRequest";
 import type { CreateTicketResponse } from "./generated/CreateTicketResponse";
 import type { ErrorBody } from "./generated/ErrorBody";
 import type { ErrorCode } from "./generated/ErrorCode";
+import type { Me } from "./generated/Me";
 import type { Message } from "./generated/Message";
 import type { Ticket } from "./generated/Ticket";
 import type { TicketStatus } from "./generated/TicketStatus";
@@ -35,10 +36,9 @@ export class ApiError extends Error {
   }
 }
 
-/** Worker identity. Today an untrusted name header; tomorrow `Authorization: Bearer …`. */
+/** Worker identity is the session cookie (sent via `credentials: "include"`); no extra headers. */
 function authHeaders(): Record<string, string> {
-  // Percent-encoded so non-ASCII names (e.g. 山田) survive HTTP headers.
-  return { "X-Actor-Name": encodeURIComponent(getActorName()) };
+  return {};
 }
 
 function ticketTokenHeaders(token: string): Record<string, string> {
@@ -58,6 +58,7 @@ async function request<T>(
     res = await fetch(`${API_BASE_URL}/api${path}`, {
       method,
       headers,
+      credentials: "include",
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch (err) {
@@ -68,10 +69,17 @@ async function request<T>(
     const error = (await res.json().catch(() => null)) as ErrorBody | null;
     throw new ApiError(error?.code ?? "internal", res.status, error?.message ?? res.statusText);
   }
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
 export const api = {
+  // login (#14)
+  me: () => request<Me>("GET", "/auth/me"),
+  logIn: (body: AuthRequest) => request<Me>("POST", "/auth/login", { body }),
+  signUp: (body: AuthRequest) => request<Me>("POST", "/auth/signup", { body }),
+  logOut: () => request<void>("POST", "/auth/logout"),
+
   // customers
   createTicket: (body: CreateTicketRequest) =>
     request<CreateTicketResponse>("POST", "/tickets", { body }),

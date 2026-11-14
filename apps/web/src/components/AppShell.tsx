@@ -1,10 +1,12 @@
-import { useCallback, useState, useSyncExternalStore } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
-import { getActorName, setActorName, subscribeActor } from "../api/actor";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { api } from "../api/client";
 import { dictionaries, type Locale, useCopy, useLocale } from "../copy/CopyProvider";
 import { useKonami } from "../hooks/useKonami";
 import styles from "./AppShell.module.css";
 import { EnterpriseMode } from "./EnterpriseMode";
+import { meKey } from "./RequireLogin";
 
 const LANGUAGE_NAMES: Record<Locale, string> = { en: "English", ja: "日本語" };
 
@@ -34,7 +36,7 @@ export function AppShell() {
           <NavLink to="/pay">Pro</NavLink>
         </nav>
         <div className={styles.tools}>
-          {pathname.startsWith("/inbox") && <ActorPicker />}
+          {pathname.startsWith("/inbox") && <SessionBadge />}
           <LanguageSwitcher />
         </div>
       </header>
@@ -67,19 +69,25 @@ function LanguageSwitcher() {
   );
 }
 
-/** Not a login: the worker just tells us who they are (see api/actor.ts). */
-function ActorPicker() {
+/** Who is signed in, and a way out (#14). */
+function SessionBadge() {
   const copy = useCopy();
-  const name = useSyncExternalStore(subscribeActor, getActorName);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const me = useQuery({ queryKey: meKey, queryFn: api.me, retry: false });
+  if (!me.data) return null;
+  async function signOut() {
+    await api.logOut().catch(() => undefined);
+    queryClient.clear();
+    navigate("/login", { replace: true });
+  }
   return (
-    <label className={styles.actor} title={copy.worker.actorHint}>
+    <span className={styles.actor}>
       <span>{copy.worker.you}</span>
-      <input
-        value={name}
-        placeholder={copy.worker.actorPlaceholder}
-        maxLength={100}
-        onChange={(event) => setActorName(event.target.value)}
-      />
-    </label>
+      <strong>{me.data.username}</strong>
+      <button type="button" onClick={signOut}>
+        {copy.login.signOut}
+      </button>
+    </span>
   );
 }

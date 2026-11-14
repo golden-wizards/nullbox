@@ -105,7 +105,7 @@ address, or to an empty value when one web server serves both the web app and `/
 
 | Want to add | Start here |
 | --- | --- |
-| Login: passwords, SSO, sessions | `Actor` extractor in `crates/api/src/http/extract.rs` (it gets the `AppState`); `authHeaders()` in `apps/web/src/api/client.ts`; for cookies across origins, see `cors()` in `crates/api/src/http/mod.rs` |
+| Login: passwords, SSO, sessions | Done for passwords (#14): `crates/api/src/auth.rs` (argon2id, sessions), routes in `crates/api/src/http/auth.rs`, the `Actor` extractor reads the session cookie; web: `RequireLogin` + `/login`. SSO plugs into `AuthService` (accounts with no password) |
 | Roles / permissions | `policy::can` in `crates/api/src/policy.rs` (always `true` today) |
 | Audit log, webhooks, email, metrics | `EventSink` in `crates/api/src/events.rs` (only logs today); refused requests in the `Actor` extractor |
 | Rate limiting, tracing exporters, CORS hardening | `middleware()` in `crates/api/src/http/mod.rs` |

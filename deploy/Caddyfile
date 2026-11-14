@@ -14,6 +14,21 @@
 		reverse_proxy api:3000
 	}
 
+	# Members-only pages (#14): no valid session cookie, no page. The API answers
+	# 204 (go ahead) or 302 to /login?next=... (returned to the browser as is).
+	@members path /inbox /inbox/*
+	handle @members {
+		root * /srv
+		route {
+			forward_auth api:3000 {
+				uri /api/auth/gate
+				header_up X-Forwarded-Uri {http.request.orig_uri}
+			}
+			try_files {path} /index.html
+			file_server
+		}
+	}
+
 	handle {
 		root * /srv
 		try_files {path} /index.html
