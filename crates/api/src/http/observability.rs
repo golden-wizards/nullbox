@@ -142,7 +142,13 @@ pub async fn metrics() -> impl IntoResponse {
 }
 
 /// Parse a W3C `traceparent` header, returning its trace id.
+#[cfg(test)]
 fn parse_traceparent(value: &str) -> Option<String> {
+    parse_traceparent_ids(value).map(|(trace_id, _)| trace_id)
+}
+
+/// Parse a W3C `traceparent` header, returning its trace id and parent span id.
+fn parse_traceparent_ids(value: &str) -> Option<(String, String)> {
     let mut parts = value.trim().split('-');
     let (version, trace_id, parent_id, flags) = (parts.next()?, parts.next()?, parts.next()?, parts.next()?);
     let hex =
@@ -153,7 +159,7 @@ fn parse_traceparent(value: &str) -> Option<String> {
         && trace_id.bytes().any(|b| b != b'0')
         && hex(parent_id, 16)
         && hex(flags, 2);
-    valid.then(|| trace_id.to_owned())
+    valid.then(|| (trace_id.to_owned(), parent_id.to_owned()))
 }
 
 fn new_trace_id() -> String {
@@ -171,12 +177,11 @@ pub async fn observe(req: Request, next: Next) -> Response {
     let method = req.method().as_str().to_owned();
     let route = req.extensions().get::<MatchedPath>().map_or_else(|| "unmatched".to_owned(), |p| p.as_str().to_owned());
     let path = req.uri().path().to_owned();
-    let trace_id = req
-        .headers()
-        .get("traceparent")
-        .and_then(|v| v.to_str().ok())
-        .and_then(parse_traceparent)
-        .unwrap_or_else(new_trace_id);
+    let (trace_id, parent_span_id) =
+        match req.headers().get("traceparent").and_then(|v| v.to_str().ok()).and_then(parse_traceparent_ids) {
+            Some((trace_id, parent)) => (trace_id, Some(parent)),
+            None => (new_trace_id(), None),
+        };
     let span_id = new_span_id();
 
     let span = tracing::info_span!(
@@ -194,6 +199,16 @@ pub async fn observe(req: Request, next: Next) -> Response {
     let elapsed = started.elapsed();
     let status = response.status().as_u16();
     record(&method, &route, status, elapsed.as_secs_f64());
+    crate::otlp::record_request(&crate::otlp::RequestSpan {
+        trace_id: &trace_id,
+        span_id: &span_id,
+        parent_span_id: parent_span_id.as_deref(),
+        method: &method,
+        route: &route,
+        status,
+        elapsed,
+        attributes: response.extensions().get::<crate::otlp::SpanAttributes>(),
+    });
     span.in_scope(|| {
         tracing::info!(
             target: "nullbox::access",
@@ -223,6 +238,13 @@ mod tests {
     fn parses_valid_traceparent() {
         let tp = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
         assert_eq!(parse_traceparent(tp).as_deref(), Some("4bf92f3577b34da6a3ce929d0e0e4736"));
+    }
+
+    #[test]
+    fn parses_traceparent_parent_span_id() {
+        let tp = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00";
+        let ids = parse_traceparent_ids(tp).unwrap();
+        assert_eq!(ids, ("4bf92f3577b34da6a3ce929d0e0e4736".to_owned(), "00f067aa0ba902b7".to_owned()));
     }
 
     #[test]

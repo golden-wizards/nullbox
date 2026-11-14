@@ -60,6 +60,15 @@ impl TicketService {
             })
             .await?;
 
+        let (id, number, subject) = (ticket.id, ticket.number, ticket.subject.as_str());
+        tracing::info!(
+            target: "nullbox::tickets",
+            ticket_id = %id,
+            ticket_number = number,
+            ticket_subject = subject,
+            severity = ?ticket.severity,
+            "ticket created: {subject}"
+        );
         self.events
             .emit(DomainEvent::TicketCreated {
                 ticket_id: ticket.id,
