@@ -169,5 +169,9 @@ work session, after every merge to `main`, and at least every ~30 minutes:**
 3. **Press Check for anything that's live but not yet scored.** When a PR for a scored issue is
    merged and deployed, the PR author verifies it from outside and then presses Check for its key
    (team page, or `/sitrep`). Note the result on the issue. Don't leave points sitting un-checked.
+   The `hot-checks` workflow does this automatically after every successful `deploy` of `main`,
+   but only for checks that have never failed. Run it by hand from the Actions tab (with a key list
+   or a dry run), or locally with `HOT_TOKEN=… scripts/hot-check.sh [keys]`. A check that failed once
+   is yours to fix and re-press.
 4. **Run `/sitrep`** (or at least look at the team page) and fix anything stale: claims with no
    activity, failed checks, newly unlocked upgrades nobody owns.
