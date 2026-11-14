@@ -1,16 +1,18 @@
 version: 2
 updates:
   - package-ecosystem: npm
+    # Match pnpm-workspace.yaml's minimumReleaseAge (14 days): pnpm refuses to
+    # install anything newer, so a shorter cooldown makes updates fail.
     cooldown:
-      default-days: 7
+      default-days: 14
     directory: "/"
     groups:
       all-dependencies:
         patterns:
-          - '*'
+          - "*"
         update-types:
-          - 'minor'
-          - 'patch'
+          - "minor"
+          - "patch"
     schedule:
       interval: weekly
     versioning-strategy: increase
@@ -25,3 +27,26 @@ updates:
         patterns:
           - "*"
     open-pull-requests-limit: 2
+  - package-ecosystem: cargo
+    cooldown:
+      default-days: 7
+    directory: "/"
+    groups:
+      cargo:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    cooldown:
+      default-days: 7
+    directory: "/deploy"
+    groups:
+      docker:
+        patterns:
+          - "*"
+    schedule:
+      interval: monthly
