@@ -171,3 +171,8 @@ work session, after every merge to `main`, and at least every ~30 minutes:**
    (team page, or `/sitrep`). Note the result on the issue. Don't leave points sitting un-checked.
 4. **Run `/sitrep`** (or at least look at the team page) and fix anything stale: claims with no
    activity, failed checks, newly unlocked upgrades nobody owns.
+
+## Git / Pull Requests
+
+- Always use meaningful branch names. Never use random or auto-generated names (e.g. claude/nifty-bardeen-ysr7xa).
+- Always squash each PR to a single commit. When you push follow-up changes to an open PR (review or CI fixes), fold them into that commit and force-push with git push --force-with-lease instead of adding new commits.
