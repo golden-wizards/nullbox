@@ -30,7 +30,7 @@ pub struct Me {
     pub username: String,
 }
 
-fn session_cookie(value: &str, max_age_secs: i64) -> HeaderValue {
+pub(super) fn session_cookie(value: &str, max_age_secs: i64) -> HeaderValue {
     let cookie = format!("{SESSION_COOKIE}={value}; Path=/; Max-Age={max_age_secs}; HttpOnly; Secure; SameSite=Lax");
     HeaderValue::from_str(&cookie).expect("cookie is ASCII")
 }

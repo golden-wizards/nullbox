@@ -148,6 +148,59 @@ impl AuthService {
         }
     }
 
+    /// Signs in an external identity (SSO), creating its account on first use.
+    /// `username` is only used for a new account (e.g. `octocat@github`).
+    pub async fn sso_sign_in(&self, provider: &str, subject: &str, username: &str) -> Result<(User, String), ApiError> {
+        let existing: Option<(String, String)> = sqlx::query_as(
+            "SELECT u.id, u.username FROM oauth_identities o JOIN users u ON u.id = o.user_id
+             WHERE o.provider = ? AND o.subject = ?",
+        )
+        .bind(provider)
+        .bind(subject)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(db_err)?;
+        let user = match existing {
+            Some((id, username)) => User { id, username },
+            None => {
+                let now = ts(Utc::now());
+                let mut username = username.to_owned();
+                // Renamed accounts can reuse an old login: keep names unique.
+                let taken: Option<(String,)> = sqlx::query_as("SELECT id FROM users WHERE username = ?")
+                    .bind(&username)
+                    .fetch_optional(&self.pool)
+                    .await
+                    .map_err(db_err)?;
+                if taken.is_some() {
+                    username = format!("{username}-{subject}");
+                }
+                let user = User { id: Uuid::now_v7().to_string(), username };
+                let mut tx = self.pool.begin().await.map_err(db_err)?;
+                sqlx::query("INSERT INTO users (id, username, password_hash, created_at) VALUES (?, ?, NULL, ?)")
+                    .bind(&user.id)
+                    .bind(&user.username)
+                    .bind(&now)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(db_err)?;
+                sqlx::query(
+                    "INSERT INTO oauth_identities (provider, subject, user_id, created_at) VALUES (?, ?, ?, ?)",
+                )
+                .bind(provider)
+                .bind(subject)
+                .bind(&user.id)
+                .bind(&now)
+                .execute(&mut *tx)
+                .await
+                .map_err(db_err)?;
+                tx.commit().await.map_err(db_err)?;
+                user
+            }
+        };
+        let session = self.create_session(&user.id).await?;
+        Ok((user, session))
+    }
+
     async fn create_session(&self, user_id: &str) -> Result<String, ApiError> {
         let session = token::generate().map_err(|e| ApiError::WorksOnMyMachine(e.to_string()))?;
         let now = Utc::now();

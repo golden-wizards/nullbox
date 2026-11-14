@@ -7,6 +7,7 @@ pub mod extract;
 mod mcp;
 pub mod observability;
 pub mod payments;
+pub mod sso;
 mod utility;
 mod worker;
 
@@ -36,6 +37,9 @@ pub fn router(state: AppState) -> Router {
         .route("/auth/logout", post(auth::log_out))
         .route("/auth/me", get(auth::me))
         .route("/auth/gate", get(auth::gate))
+        .route("/auth/providers", get(sso::providers))
+        .route("/auth/github/start", get(sso::start))
+        .route("/auth/github/callback", get(sso::callback))
         // admin
         .route("/admin/export", get(admin::export))
         // utility
